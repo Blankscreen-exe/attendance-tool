@@ -4,5 +4,6 @@
 data
 staticfiles
 node_modules
+docs
 __pycache__
 *.pyc
