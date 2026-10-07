@@ -372,6 +372,10 @@ class LeaveAllowanceForm(StyledFormMixin, forms.Form):
                 LeaveAllowance.objects.update_or_create(leave_type=leave_type, defaults={"days": days})
 
 
+class TestEmailForm(StyledFormMixin, forms.Form):
+    to = forms.EmailField(label="Send a test email to")
+
+
 class HolidayForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Holiday

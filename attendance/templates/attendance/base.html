@@ -30,6 +30,7 @@
         <a class="nav-link {% active 'manage_schedule' %}" href="{% url 'manage_schedules' %}">Schedules</a>
         <a class="nav-link {% active 'manage_holiday' %}" href="{% url 'manage_holidays' %}">Holidays</a>
         <a class="nav-link {% active 'manage_leave' %}" href="{% url 'manage_leave' %}">Leave</a>
+        <a class="nav-link {% active 'manage_email' %}" href="{% url 'manage_email' %}">Email</a>
         {% else %}
         <a class="nav-link {% active 'home' %}" href="{% url 'home' %}">Clock</a>
         <a class="nav-link {% active 'calendar' %}" href="{% url 'calendar' %}">Calendar</a>

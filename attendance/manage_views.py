@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import date, timedelta
 from functools import wraps
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -28,6 +29,7 @@ from .forms import (
     ResetPasswordForm,
     ReviewFilterForm,
     ScheduleForm,
+    TestEmailForm,
 )
 from .models import (
     Employee,
@@ -666,6 +668,53 @@ def leave_overview(request):
         request,
         "attendance/manage/leave.html",
         {"year": year, "form": form, "rows": rows, "leave_types": [label for _, label in leave_types]},
+    )
+
+
+# --- Email ------------------------------------------------------------------
+
+
+@admin_required
+def email_settings(request):
+    """Shows the mail server in use (never its password) and sends a test message."""
+    configured = bool(settings.EMAIL_HOST)
+    form = TestEmailForm(request.POST or None, initial={"to": request.user.email})
+    if request.method == "POST" and form.is_valid():
+        recipient = form.cleaned_data["to"]
+        if not configured:
+            messages.error(request, "No mail server is set, so there is nothing to test yet.")
+        else:
+            try:
+                notifications.send_test(request, recipient)
+            except OSError as error:  # covers SMTP, network, TLS and timeout failures
+                messages.error(request, f"The test email was not sent. {notifications.explain_failure(error)}")
+            else:
+                messages.success(
+                    request,
+                    f"Test email sent to {recipient}. The mail server accepted it, "
+                    "so check the inbox, and the spam folder if it is not there.",
+                )
+        return redirect("manage_email")
+
+    employees = Employee.objects.filter(is_active=True, is_staff=False)
+    return render(
+        request,
+        "attendance/manage/email.html",
+        {
+            "form": form,
+            "configured": configured,
+            "server": {
+                "host": settings.EMAIL_HOST,
+                "port": settings.EMAIL_PORT,
+                "encryption": "SSL" if settings.EMAIL_USE_SSL else "STARTTLS" if settings.EMAIL_USE_TLS else "None",
+                "username": settings.EMAIL_HOST_USER,
+                "has_password": bool(settings.EMAIL_HOST_PASSWORD),
+                "sender": settings.DEFAULT_FROM_EMAIL,
+            },
+            "admin_addresses": notifications.admin_addresses(),
+            "employee_count": employees.count(),
+            "without_address": employees.filter(email="").count(),
+        },
     )
 
 

@@ -1,0 +1,75 @@
+{% extends "attendance/base.html" %}
+{% block title %}Email · Attendance{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-2xl">
+  <h1 class="page-title">Email</h1>
+  <p class="mt-1 text-sm text-slate-600">
+    Notices about requests and corrections go out through the mail server set in the <code>.env</code> file.
+  </p>
+
+  <h2 class="section-title mt-6">Mail server</h2>
+  {% if configured %}
+  <dl class="card mt-2 divide-y divide-slate-100 text-sm">
+    <div class="flex flex-wrap justify-between gap-x-4 px-4 py-2.5">
+      <dt class="text-slate-500">Server</dt>
+      <dd class="font-medium text-slate-900">{{ server.host }}, port {{ server.port }}</dd>
+    </div>
+    <div class="flex flex-wrap justify-between gap-x-4 px-4 py-2.5">
+      <dt class="text-slate-500">Encryption</dt>
+      <dd class="font-medium text-slate-900">{{ server.encryption }}</dd>
+    </div>
+    <div class="flex flex-wrap justify-between gap-x-4 px-4 py-2.5">
+      <dt class="text-slate-500">Username</dt>
+      <dd class="font-medium text-slate-900">{{ server.username|default:"Not set" }}</dd>
+    </div>
+    <div class="flex flex-wrap justify-between gap-x-4 px-4 py-2.5">
+      <dt class="text-slate-500">Password or API key</dt>
+      <dd class="font-medium text-slate-900">{% if server.has_password %}Set (never shown){% else %}Not set{% endif %}</dd>
+    </div>
+    <div class="flex flex-wrap justify-between gap-x-4 px-4 py-2.5">
+      <dt class="text-slate-500">Sent from</dt>
+      <dd class="font-medium text-slate-900">{{ server.sender }}</dd>
+    </div>
+  </dl>
+  {% else %}
+  <p class="card mt-2 px-4 py-4 text-sm text-slate-700">
+    No mail server is set, so no email is sent. Add the <code>EMAIL_</code> lines to <code>.env</code>
+    (see <code>.env.example</code>), then restart the app.
+  </p>
+  {% endif %}
+  <p class="mt-2 text-xs text-slate-500">
+    These are read from <code>.env</code> when the app starts. Restart the app after changing them.
+  </p>
+
+  <h2 class="section-title mt-8">Send a test email</h2>
+  <form method="post" class="card mt-2 flex flex-wrap items-end gap-3 p-4" novalidate>
+    {% csrf_token %}
+    <div class="min-w-64 grow">
+      <label class="label" for="{{ form.to.id_for_label }}">Send to</label>
+      {{ form.to }}
+      {{ form.to.errors }}
+    </div>
+    <button class="btn btn-primary" {% if not configured %}disabled{% endif %}>Send test email</button>
+  </form>
+  <p class="mt-2 text-xs text-slate-500">
+    This uses the settings above. If it fails, the reason the mail server gave is shown at the top of this page.
+  </p>
+
+  <h2 class="section-title mt-8">Who gets notices</h2>
+  <ul class="card mt-2 divide-y divide-slate-100 text-sm text-slate-700">
+    <li class="px-4 py-2.5">
+      <span class="font-medium text-slate-900">New requests</span> go to every admin with an email address:
+      {% if admin_addresses %}{{ admin_addresses|join:", " }}.{% else %}<span class="badge bg-amber-100 text-amber-800">no admin has one yet</span>{% endif %}
+    </li>
+    <li class="px-4 py-2.5">
+      <span class="font-medium text-slate-900">Decisions and corrections</span> go to the employee concerned.
+      {% if without_address %}
+      <span class="badge bg-amber-100 text-amber-800">{{ without_address }} of {{ employee_count }} employee{{ employee_count|pluralize }} {{ without_address|pluralize:"has,have" }} no email address</span>
+      {% elif employee_count %}
+      Every employee has an email address.
+      {% endif %}
+    </li>
+  </ul>
+  <p class="mt-2 text-xs text-slate-500">Addresses are set on the <a class="link" href="{% url 'manage_employees' %}">Employees</a> page.</p>
+</div>
+{% endblock %}

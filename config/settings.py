@@ -34,6 +34,14 @@ def env_list(name):
 
 _load_dotenv(BASE_DIR / ".env")
 
+# SSLKEYLOGFILE is a debugging switch that makes Python write TLS keys to a
+# file. Some Windows builds of Python do not survive it: the whole process
+# dies ("no OPENSSL_Applink") the moment a secure connection is prepared,
+# which here means the moment the app sends an email. The app has no use for
+# key logging, so on Windows it is switched off for this process.
+if os.name == "nt":
+    os.environ.pop("SSLKEYLOGFILE", None)
+
 DEBUG = env_bool("DEBUG")
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "")

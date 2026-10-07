@@ -39,6 +39,7 @@ urlpatterns = [
     path("manage/schedules/<int:pk>/edit/", manage_views.schedule_edit, name="manage_schedule_edit"),
     path("manage/schedules/<int:pk>/delete/", manage_views.schedule_delete, name="manage_schedule_delete"),
     path("manage/leave/", manage_views.leave_overview, name="manage_leave"),
+    path("manage/email/", manage_views.email_settings, name="manage_email"),
     path("manage/holidays/", manage_views.holidays, name="manage_holidays"),
     path("manage/holidays/new/", manage_views.holiday_edit, name="manage_holiday_new"),
     path("manage/holidays/preset/", manage_views.holiday_preset, name="manage_holiday_preset"),

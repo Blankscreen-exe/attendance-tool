@@ -5,6 +5,9 @@ server is down or misconfigured, the failure is logged and the page carries on.
 """
 
 import logging
+import smtplib
+import socket
+import ssl
 
 from django.core.mail import send_mail
 from django.urls import reverse
@@ -27,10 +30,62 @@ def _send(subject, lines, recipients):
         return 0
 
 
-def _admin_addresses():
+def admin_addresses():
     return list(
         Employee.objects.filter(is_staff=True, is_active=True).exclude(email="").values_list("email", flat=True)
     )
+
+
+def send_test(http_request, recipient):
+    """Sends one message and, unlike the notices, lets a failure through so a wrong setting shows up."""
+    sender = http_request.user.display_name
+    send_mail(
+        "[Attendance] Test email",
+        "\n".join(
+            [
+                f"This is a test from your attendance tool, sent by {sender} at {clock_text(timezone.now())}.",
+                "",
+                "If you are reading this, the mail server settings work.",
+                "",
+                http_request.build_absolute_uri(reverse("home")),
+            ]
+        ),
+        None,
+        [recipient],
+        fail_silently=False,
+    )
+
+
+def explain_failure(error):
+    """A plain reason for a failed send, followed by what the mail server or the network said."""
+    if isinstance(error, smtplib.SMTPAuthenticationError):
+        reason = (
+            "The mail server rejected the username or password. "
+            "Check EMAIL_HOST_USER and EMAIL_HOST_PASSWORD (the API key)."
+        )
+    elif isinstance(error, (smtplib.SMTPSenderRefused, smtplib.SMTPRecipientsRefused, smtplib.SMTPDataError)):
+        reason = (
+            "The mail server refused the message. "
+            "Check that EMAIL_FROM is an address you are allowed to send from."
+        )
+    elif isinstance(error, smtplib.SMTPServerDisconnected):
+        reason = (
+            "The mail server closed the connection. "
+            "This usually means the port and the encryption setting do not match."
+        )
+    elif isinstance(error, ssl.SSLError):
+        reason = (
+            "The secure connection could not be set up. "
+            "Port 587 needs EMAIL_USE_SSL=false; port 465 needs EMAIL_USE_SSL=true."
+        )
+    elif isinstance(error, (TimeoutError, ConnectionError, socket.gaierror)):
+        reason = (
+            "The mail server could not be reached. Check EMAIL_HOST and EMAIL_PORT, "
+            "and that this machine is allowed to connect out on that port."
+        )
+    else:
+        reason = "The mail server reported a problem."
+    return f"{reason} Details: {type(error).__name__}: {error}"
 
 
 def _day(moment):
@@ -65,7 +120,7 @@ def request_submitted(http_request, item):
             "",
             f"Approve or reject it: {http_request.build_absolute_uri(reverse('manage_requests'))}",
         ],
-        _admin_addresses(),
+        admin_addresses(),
     )
 
 

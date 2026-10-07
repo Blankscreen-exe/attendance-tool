@@ -1,3 +1,7 @@
+import os
+import smtplib
+import ssl
+import unittest
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest import mock
@@ -8,7 +12,7 @@ from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -435,6 +439,15 @@ class StartingDataTests(TestCase):
     def test_new_database_starts_with_common_leave_allowances(self):
         allowances = dict(LeaveAllowance.objects.values_list("leave_type", "days"))
         self.assertEqual(allowances, {"annual": 14, "casual": 10, "sick": 8})
+
+
+class SecureConnectionTests(SimpleTestCase):
+    @unittest.skipUnless(os.name == "nt", "the crash this guards against only happens on Windows")
+    def test_tls_key_logging_cannot_take_the_app_down(self):
+        # With SSLKEYLOGFILE set, some Windows builds of Python die outright on the
+        # next line but one, so the settings must have removed it first.
+        self.assertNotIn("SSLKEYLOGFILE", os.environ)
+        ssl.create_default_context()  # what sending an email does first
 
 
 class InstallOnPhoneTests(TestCase):
@@ -1412,3 +1425,73 @@ class ViewTests(AttendanceTestCase):
         self.assertEqual(today_page.context["timeline"].ticks[0]["label"], "5 AM")
         detail = self.client.get(reverse("manage_employee_detail", args=[self.employee.pk]))
         self.assertContains(detail, "Timeline for October 2026")
+
+    MAIL_SERVER = {
+        "EMAIL_HOST": "smtp.example.com",
+        "EMAIL_HOST_USER": "apikey",
+        "EMAIL_HOST_PASSWORD": "super-secret-key",
+        "DEFAULT_FROM_EMAIL": "hr@example.com",
+    }
+
+    def test_email_page_shows_the_mail_server_but_never_its_password(self):
+        self.give_everyone_an_address()
+        Employee.objects.create_user("omar", password="correct-horse-3")  # no address
+        self.sign_in(self.admin)
+        with self.settings(**self.MAIL_SERVER):
+            page = self.client.get(reverse("manage_email"))
+        for text in (
+            "smtp.example.com, port 587",
+            "STARTTLS",
+            "apikey",
+            "Set (never shown)",
+            "hr@example.com",
+            "boss@example.com",
+            "1 of 2 employees has no email address",
+            'value="boss@example.com"',  # the test goes to the admin's own address unless changed
+        ):
+            with self.subTest(text):
+                self.assertContains(page, text)
+        self.assertNotContains(page, "super-secret-key")
+
+    def test_admin_sends_a_test_email(self):
+        self.sign_in(self.admin)
+        with self.settings(**self.MAIL_SERVER):
+            response = self.client.post(reverse("manage_email"), {"to": "owner@example.com"}, follow=True)
+        (message,) = mail.outbox
+        self.assertEqual((message.to, message.subject), (["owner@example.com"], "[Attendance] Test email"))
+        self.assertEqual(message.from_email, "hr@example.com")
+        self.assertIn("the mail server settings work", message.body)
+        self.assertContains(response, "Test email sent to owner@example.com")
+
+    def test_a_failed_test_email_says_why(self):
+        self.sign_in(self.admin)
+        failures = {
+            "rejected the username or password": smtplib.SMTPAuthenticationError(535, b"Authentication failed"),
+            "could not be reached": TimeoutError("timed out"),
+            "refused the message": smtplib.SMTPSenderRefused(550, b"Sender not allowed", "hr@example.com"),
+            "port and the encryption setting do not match": smtplib.SMTPServerDisconnected("Connection unexpectedly closed"),
+        }
+        for reason, error in failures.items():
+            with self.subTest(reason), self.settings(**self.MAIL_SERVER):
+                with mock.patch("attendance.notifications.send_mail", side_effect=error):
+                    response = self.client.post(reverse("manage_email"), {"to": "owner@example.com"}, follow=True)
+                self.assertContains(response, "The test email was not sent.")
+                self.assertContains(response, reason)
+                self.assertContains(response, type(error).__name__)
+        self.assertEqual(mail.outbox, [])
+
+    def test_test_email_needs_a_mail_server_and_a_real_address(self):
+        self.sign_in(self.admin)
+        with self.settings(EMAIL_HOST=""):
+            page = self.client.get(reverse("manage_email"))
+            self.assertContains(page, "No mail server is set, so no email is sent")
+            self.assertContains(page, "disabled")
+            response = self.client.post(reverse("manage_email"), {"to": "owner@example.com"}, follow=True)
+            self.assertContains(response, "nothing to test yet")
+        with self.settings(**self.MAIL_SERVER):
+            self.assertContains(self.client.post(reverse("manage_email"), {"to": "not-an-address"}), "valid email")
+        self.assertEqual(mail.outbox, [])
+
+        self.sign_in(self.employee)
+        self.assertEqual(self.client.get(reverse("manage_email")).status_code, 403)
+        self.assertEqual(self.client.post(reverse("manage_email"), {"to": "x@example.com"}).status_code, 403)
