@@ -18,7 +18,6 @@ from django.views.decorators.http import require_POST
 from . import notifications, services
 from .forms import LeaveForm, LoginForm, MissingTimeForm, OwnPasswordForm
 from .models import WEEKDAY_SHORT, LeaveRequest, MissingTimeRequest, RequestStatus, TimeEntry
-from .templatetags.attendance_tags import duration
 
 REQUEST_MODELS = {model.kind: model for model in (MissingTimeRequest, LeaveRequest)}
 
@@ -34,10 +33,6 @@ def employee_only(view):
         return view(request, *args, **kwargs)
 
     return wrapped
-
-
-def clock_label(moment):
-    return timezone.localtime(moment).strftime("%I:%M %p").lstrip("0")
 
 
 def parse_month(value, fallback):
@@ -62,6 +57,7 @@ def month_context(employee, month, now=None):
             day.muted = day.date.month != month.month
             if not day.muted:
                 month_days.append(day)
+    recorded = [day for day in month_days if day.entries]
     return {
         "subject": employee,
         "month": month,
@@ -70,7 +66,10 @@ def month_context(employee, month, now=None):
         "weeks": weeks,
         "weekday_names": WEEKDAY_SHORT,
         "month_worked": sum((day.worked for day in month_days), timedelta(0)),
-        "days_with_entries": [day for day in month_days if day.entries],
+        "days_with_entries": recorded,
+        "timeline": services.build_timeline(
+            [(f"{day.date:%a} {day.date.day} {day.date:%b}", None, day) for day in recorded], now=now
+        ),
         "corrections": employee.corrections.select_related("admin")[:20],
     }
 
@@ -146,10 +145,10 @@ def punch(request):
         state = "in" if action == "in" else "out"
         messages.info(request, f"You were already clocked {state}, so nothing changed.")
     elif action == "in":
-        messages.success(request, f"Clocked in at {clock_label(entry.clock_in)}.")
+        messages.success(request, f"Clocked in at {services.clock_text(entry.clock_in)}.")
     else:
-        worked = duration(entry.clock_out - entry.clock_in)
-        messages.success(request, f"Clocked out at {clock_label(entry.clock_out)} after {worked}.")
+        worked = services.duration_text(entry.clock_out - entry.clock_in)
+        messages.success(request, f"Clocked out at {services.clock_text(entry.clock_out)} after {worked}.")
     return redirect("home")
 
 
@@ -203,7 +202,7 @@ def missing_time_new(request):
     if entry:
         title = "Add a missing clock-out"
         intro = (
-            f"You clocked in at {clock_label(entry.clock_in)} on "
+            f"You clocked in at {services.clock_text(entry.clock_in)} on "
             f"{timezone.localtime(entry.clock_in):%A %d %B} and did not clock out. "
             "Enter the time you stopped working."
         )

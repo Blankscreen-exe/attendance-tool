@@ -36,6 +36,13 @@
   {% include "attendance/_calendar.html" %}
 </div>
 
+{% if days_with_entries %}
+<h2 class="section-title mt-8">Timeline for {{ month|date:"F Y" }}</h2>
+<div class="mt-2">
+  {% include "attendance/_timeline.html" %}
+</div>
+{% endif %}
+
 <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
   <h2 class="section-title">Record for {{ month|date:"F Y" }}</h2>
   {% if not subject.is_staff %}<a class="btn btn-secondary btn-sm print:hidden" href="{% url 'manage_entry_new' subject.pk %}">Add time</a>{% endif %}

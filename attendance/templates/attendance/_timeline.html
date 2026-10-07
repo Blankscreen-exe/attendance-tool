@@ -1,0 +1,68 @@
+{% load static attendance_tags %}
+{# One bar per row on a shared time-of-day axis. Built by services.build_timeline. #}
+<div class="card p-4" data-timeline>
+  <ul class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+    <li class="flex items-center gap-1.5"><span class="h-2.5 w-4 rounded-sm bg-emerald-600"></span>Worked</li>
+    {% if "break" in timeline.kinds %}
+    <li class="flex items-center gap-1.5"><span class="h-2.5 w-4 rounded-sm bg-slate-300"></span>Break</li>
+    {% endif %}
+    {% if "missing" in timeline.kinds %}
+    <li class="flex items-center gap-1.5">
+      <span class="flex size-3.5 items-center justify-center rounded-full bg-amber-400 text-[9px] font-bold text-amber-950">!</span>No clock-out
+    </li>
+    {% endif %}
+    {% if timeline.now_left %}
+    <li class="flex items-center gap-1.5"><span class="h-3.5 w-px bg-slate-900"></span>Now</li>
+    {% endif %}
+  </ul>
+
+  <div class="flex gap-3">
+    <div class="w-20 shrink-0 sm:w-36"></div>
+    <div class="relative h-4 grow text-[10px] text-slate-500 tabular-nums">
+      {% for tick in timeline.ticks %}
+      {% if tick.label %}
+      <span class="absolute -translate-x-1/2 whitespace-nowrap{% if not tick.major %} hidden sm:block{% endif %}" style="left: {{ tick.left }}%">{{ tick.label }}</span>
+      {% endif %}
+      {% endfor %}
+    </div>
+    <div class="w-14 shrink-0 sm:w-16"></div>
+  </div>
+
+  {% for row in timeline.rows %}
+  <div class="flex items-center gap-3 border-t border-slate-100 py-1">
+    <div class="w-20 shrink-0 truncate text-sm sm:w-36" title="{{ row.label }}">
+      {% if row.url %}<a class="link" href="{{ row.url }}">{{ row.label }}</a>{% else %}<span class="text-slate-700">{{ row.label }}</span>{% endif %}
+    </div>
+    <div class="relative h-7 grow rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+         tabindex="0" role="img" aria-label="{{ row.label }}: {{ row.summary }}"
+         data-tip-on="focus" data-tip-value="{{ row.label }}" data-tip-label="{{ row.summary_lines }}">
+      {% for tick in timeline.ticks %}<span class="absolute inset-y-0 w-px bg-slate-200" style="left: {{ tick.left }}%"></span>{% endfor %}
+      {% for segment in row.segments %}
+      {% if segment.kind == "missing" %}
+      <span class="absolute inset-y-0 z-10 flex w-6 -translate-x-1/2 items-center justify-center" style="left: {{ segment.left }}%"
+            data-tip-value="{{ segment.value }}" data-tip-label="{{ segment.label }}">
+        <span class="flex size-4 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-amber-950 ring-2 ring-white">!</span>
+      </span>
+      {% else %}
+      <span class="group absolute inset-y-0 flex items-center" style="left: calc({{ segment.left }}% + 1px); width: calc({{ segment.width }}% - 2px); min-width: 3px"
+            data-tip-value="{{ segment.value }}" data-tip-label="{{ segment.label }}">
+        <span class="h-3.5 w-full group-hover:brightness-110 {% if segment.kind == 'break' %}rounded-[4px] bg-slate-300{% elif segment.kind == 'live' %}rounded-l-[4px] bg-emerald-600{% else %}rounded-[4px] bg-emerald-600{% endif %}"></span>
+      </span>
+      {% endif %}
+      {% endfor %}
+      {% if timeline.now_left and row.day.is_today %}<span class="absolute -inset-y-1 w-px bg-slate-900" style="left: {{ timeline.now_left }}%"></span>{% endif %}
+    </div>
+    <div class="w-14 shrink-0 text-right text-sm text-slate-900 tabular-nums sm:w-16">
+      {% if row.day.entries %}{{ row.day.worked|duration }}{% else %}<span class="text-slate-300">—</span>{% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <p class="border-t border-slate-100 py-4 text-center text-sm text-slate-500">Nothing to show yet.</p>
+  {% endfor %}
+
+  <div hidden data-timeline-tip class="pointer-events-none fixed z-50 max-w-xs rounded-md bg-slate-900 px-2.5 py-1.5 text-xs text-white shadow-lg">
+    <div class="font-semibold" data-tip-slot="value"></div>
+    <div class="whitespace-pre-line text-slate-300" data-tip-slot="label"></div>
+  </div>
+</div>
+<script src="{% static 'attendance/timeline.js' %}" defer></script>

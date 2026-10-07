@@ -26,6 +26,12 @@ server-rendered HTML styled with a compiled Tailwind stylesheet.
   There is no accrual, carry-over or pro-rating for people who join mid-year.
 - **Calendar** per employee: each day is present, absent, leave, holiday,
   day off or missing a clock-out.
+- **Breaks.** Clocking out and back in on the same day shows as a break line
+  between the two entries, with its length. Breaks are not counted as work.
+- **Timeline chart.** Each day drawn as a bar along the hours of the day: work,
+  breaks, a marker for a missing clock-out, and a line for the present moment.
+  The admin's Today page has one bar per employee; each employee's month has
+  one bar per day. Hover or tap a stretch for its times.
 - **Admin pages** under `/manage/`: who is in right now, attendance by week or
   by month, CSV exports, the request inbox, employees, schedules, holidays
   and leave.

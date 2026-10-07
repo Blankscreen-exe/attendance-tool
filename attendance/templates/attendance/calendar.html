@@ -6,6 +6,13 @@
   {% include "attendance/_calendar.html" %}
 </div>
 
+{% if days_with_entries %}
+<h2 class="section-title mt-8">Timeline for {{ month|date:"F Y" }}</h2>
+<div class="mt-2">
+  {% include "attendance/_timeline.html" %}
+</div>
+{% endif %}
+
 <h2 class="section-title mt-8">Record for {{ month|date:"F Y" }}</h2>
 {% if days_with_entries %}
 <div class="card mt-2 overflow-x-auto">

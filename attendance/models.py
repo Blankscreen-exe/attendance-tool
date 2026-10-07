@@ -245,6 +245,8 @@ class TimeEntry(models.Model):
             ),
         ]
 
+    is_break = False  # lets templates tell entries from the breaks listed between them
+
     def __str__(self):
         return f"{self.employee} {self.clock_in:%Y-%m-%d %H:%M}"
 

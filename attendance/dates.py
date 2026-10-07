@@ -33,3 +33,14 @@ def today(now=None):
 def week_start(day):
     """The Monday of the week a day falls in."""
     return day - timedelta(days=day.weekday())
+
+
+def clock_text(moment):
+    """A moment as a time of day in the company timezone, e.g. "9:05 AM"."""
+    return timezone.localtime(moment).strftime("%I:%M %p").lstrip("0")
+
+
+def duration_text(length):
+    """A length of time as hours and minutes, e.g. "7h 05m"."""
+    minutes = int(max(length, timedelta(0)).total_seconds() // 60)
+    return f"{minutes // 60}h {minutes % 60:02d}m"

@@ -112,12 +112,20 @@ def dashboard(request):
         rows.append(
             {"employee": employee, "week": week, "day": day, "open_entry": open_entry, "last_entry": last_entry}
         )
+    timeline = services.build_timeline(
+        [
+            (row["employee"].display_name, reverse("manage_employee_detail", args=[row["employee"].pk]), row["day"])
+            for row in rows
+        ],
+        now=now,
+    )
     return render(
         request,
         "attendance/manage/dashboard.html",
         {
             "today": current,
             "rows": rows,
+            "timeline": timeline,
             "clocked_in": sum(1 for row in rows if row["open_entry"]),
             "notices": _holiday_notices(current),
         },

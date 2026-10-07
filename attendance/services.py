@@ -4,16 +4,26 @@ Everything a calendar or report shows is derived here from four sources:
 time entries, approved leave, holidays and the employee's schedule.
 """
 
+import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from .dates import BEGINNING, ONE_DAY, day_start, today, week_start, work_date  # noqa: F401
+from .dates import (  # noqa: F401  (re-exported for the views)
+    BEGINNING,
+    ONE_DAY,
+    clock_text,
+    day_start,
+    duration_text,
+    today,
+    week_start,
+    work_date,
+)
 from .models import (
     Correction,
     Employee,
@@ -234,6 +244,22 @@ def leave_balance_for(request, allowances=None):
 # --- Day status and weekly targets ------------------------------------------
 
 
+MIN_BREAK = timedelta(minutes=1)  # shorter gaps are a double tap, not a break
+
+
+@dataclass(frozen=True)
+class Break:
+    """The gap between clocking out and clocking back in on the same day."""
+
+    start: datetime
+    end: datetime
+    is_break = True
+
+    @property
+    def duration(self):
+        return self.end - self.start
+
+
 @dataclass
 class Day:
     date: date
@@ -256,6 +282,22 @@ class Day:
     @property
     def has_missing_out(self):
         return any(entry.missing_out for entry in self.entries)
+
+    @property
+    def sequence(self):
+        """The day's entries in order, with a Break wherever someone clocked out and back in."""
+        items = []
+        previous = None
+        for entry in self.entries:
+            if previous is not None and previous.clock_out and entry.clock_in - previous.clock_out >= MIN_BREAK:
+                items.append(Break(previous.clock_out, entry.clock_in))
+            items.append(entry)
+            previous = entry
+        return items
+
+    @property
+    def break_total(self):
+        return sum((item.duration for item in self.sequence if item.is_break), timedelta(0))
 
     @property
     def is_credited(self):
@@ -413,6 +455,138 @@ def build_weeks(employee, start, end, now=None, holidays=None):
             Week(start=week_days[0].date, days=week_days, worked=worked, target=target, state=state, terms=terms)
         )
     return weeks
+
+
+# --- Timeline ---------------------------------------------------------------
+
+TIMELINE_DEFAULT_HOURS = (8, 18)  # the axis always covers at least this part of the day
+TIMELINE_MAX_HOUR = 36  # room for work that runs past midnight
+
+
+@dataclass
+class Segment:
+    """One mark on a timeline: a stretch of work, a break, or a clock-in with no clock-out."""
+
+    kind: str  # work | live | break | missing
+    start: datetime
+    end: datetime | None  # None when there was no clock-out
+    from_hour: float = 0.0  # hours since the attendance day began
+    to_hour: float = 0.0
+    left: str = "0"  # position and width along the axis, in percent
+    width: str = "0"
+
+    @property
+    def value(self):
+        """The headline of the tooltip."""
+        return "No clock-out" if self.end is None else duration_text(self.end - self.start)
+
+    @property
+    def label(self):
+        if self.kind == "missing":
+            return f"Clocked in at {clock_text(self.start)}"
+        if self.kind == "live":
+            return f"Working now · since {clock_text(self.start)}"
+        title = "Break" if self.kind == "break" else "Worked"
+        return f"{title} · {clock_text(self.start)} – {clock_text(self.end)}"
+
+
+@dataclass
+class TimelineRow:
+    label: str
+    url: str | None
+    day: Day
+    segments: list
+
+    def _in_words(self, separator):
+        if not self.segments:
+            return "Nothing recorded"
+        return separator.join(f"{segment.label}: {segment.value}" for segment in self.segments)
+
+    @property
+    def summary(self):
+        """The whole row in one sentence, for screen readers."""
+        return self._in_words("; ")
+
+    @property
+    def summary_lines(self):
+        """The same, one stretch per line, for the tooltip shown on keyboard focus."""
+        return self._in_words("\n")
+
+
+@dataclass
+class Timeline:
+    rows: list
+    ticks: list  # one per hour: {"left", "label", "major"}
+    now_left: str | None  # where the present moment falls, if today is shown
+    kinds: set  # which kinds of segment appear, so the legend lists only those
+
+
+def _hour_label(hour):
+    hour %= 24
+    if hour == 0:
+        return "12 AM"
+    if hour == 12:
+        return "12 PM"
+    return f"{hour} AM" if hour < 12 else f"{hour - 12} PM"
+
+
+def build_timeline(rows, now=None):
+    """Lays days out along one shared time-of-day axis.
+
+    `rows` is a list of (label, url, Day): one bar each, so the same chart
+    serves "every employee on one day" and "one employee across many days".
+    """
+    now = now or timezone.now()
+    current = today(now)
+    low, high = TIMELINE_DEFAULT_HOURS
+    built = []
+    for label, url, day in rows:
+        origin = day_start(day.date)
+        segments = []
+        for item in day.sequence:
+            if item.is_break:
+                segment = Segment("break", item.start, item.end)
+            elif item.clock_out:
+                segment = Segment("work", item.clock_in, item.clock_out)
+            elif item.missing_out:
+                segment = Segment("missing", item.clock_in, None)
+            else:
+                segment = Segment("live", item.clock_in, max(now, item.clock_in))
+            segment.from_hour = (segment.start - origin).total_seconds() / 3600
+            segment.to_hour = ((segment.end or segment.start) - origin).total_seconds() / 3600
+            low = min(low, math.floor(segment.from_hour))
+            high = max(high, math.ceil(segment.to_hour))
+            segments.append(segment)
+        built.append(TimelineRow(label, url, day, segments))
+
+    low = max(low, 0)
+    high = min(high, TIMELINE_MAX_HOUR)
+    span = high - low
+
+    def position(hour):
+        return (min(max(hour, low), high) - low) / span * 100
+
+    for row in built:
+        for segment in row.segments:
+            segment.left = f"{position(segment.from_hour):.3f}"
+            segment.width = f"{position(segment.to_hour) - position(segment.from_hour):.3f}"
+
+    step = 1 if span <= 6 else 2 if span <= 14 else 3 if span <= 21 else 4
+    ticks = [
+        {
+            "left": f"{position(hour):.3f}",
+            "label": _hour_label(hour) if (hour - low) % step == 0 else "",
+            "major": (hour - low) % (step * 2) == 0,  # the only labels shown on narrow screens
+        }
+        for hour in range(low, high + 1)
+    ]
+    now_left = None
+    if any(row.day.date == current for row in built):
+        now_hour = (now - day_start(current)).total_seconds() / 3600
+        if low <= now_hour <= high:
+            now_left = f"{position(now_hour):.3f}"
+    kinds = {segment.kind for row in built for segment in row.segments}
+    return Timeline(rows=built, ticks=ticks, now_left=now_left, kinds=kinds)
 
 
 @dataclass

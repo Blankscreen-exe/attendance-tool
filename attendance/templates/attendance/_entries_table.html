@@ -12,7 +12,16 @@
   </thead>
   <tbody>
     {% for day in days %}
-    {% for entry in day.entries %}
+    {% for item in day.sequence %}
+    {% if item.is_break %}
+    <tr class="bg-slate-50">
+      <td class="py-1.5"></td>
+      <td class="py-1.5 text-xs text-slate-500" colspan="{% if manage %}5{% else %}4{% endif %}">
+        Break · <span class="tabular-nums">{{ item.duration|duration }}</span>
+      </td>
+    </tr>
+    {% else %}
+    {% with entry=item %}
     <tr>
       <td class="whitespace-nowrap {% if not forloop.first %}text-slate-300{% endif %}">{{ day.date|date:"D j M" }}</td>
       <td class="whitespace-nowrap tabular-nums">{{ entry.clock_in|time:"g:i A" }}</td>
@@ -45,6 +54,8 @@
       </td>
       {% endif %}
     </tr>
+    {% endwith %}
+    {% endif %}
     {% endfor %}
     {% endfor %}
   </tbody>

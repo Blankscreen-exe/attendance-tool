@@ -10,8 +10,8 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
 
+from .dates import clock_text, duration_text
 from .models import Correction, Employee, RequestStatus
-from .templatetags.attendance_tags import duration
 
 logger = logging.getLogger(__name__)
 
@@ -33,16 +33,12 @@ def _admin_addresses():
     )
 
 
-def _clock(moment):
-    return timezone.localtime(moment).strftime("%I:%M %p").lstrip("0")
-
-
 def _day(moment):
     return timezone.localtime(moment).strftime("%a %d %b %Y")
 
 
 def _span(clock_in, clock_out):
-    return f"{_day(clock_in)}, {_clock(clock_in)} to {_clock(clock_out) if clock_out else 'no clock-out'}"
+    return f"{_day(clock_in)}, {clock_text(clock_in)} to {clock_text(clock_out) if clock_out else 'no clock-out'}"
 
 
 def describe(item):
@@ -54,7 +50,7 @@ def describe(item):
             dates += f" to {item.end_date:%a %d %b %Y}"
         return f"{item.get_leave_type_display()} leave, {dates} ({days})"
     what = "Missing clock-out" if item.entry_id else "Missing time"
-    return f"{what}: {_span(item.clock_in, item.clock_out)} ({duration(item.duration)})"
+    return f"{what}: {_span(item.clock_in, item.clock_out)} ({duration_text(item.duration)})"
 
 
 def request_submitted(http_request, item):

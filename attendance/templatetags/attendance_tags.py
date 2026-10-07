@@ -2,6 +2,8 @@ from datetime import timedelta
 
 from django import template
 
+from ..dates import duration_text
+
 register = template.Library()
 
 # Full class names are spelled out so the Tailwind build can find them.
@@ -55,17 +57,12 @@ MESSAGE_STYLES = {
 }
 
 
-def _format(value):
-    minutes = int(value.total_seconds() // 60)
-    return f"{minutes // 60}h {minutes % 60:02d}m"
-
-
 @register.filter
 def duration(value):
     """A timedelta as "7h 05m"."""
     if not isinstance(value, timedelta):
         return "—"
-    return _format(max(value, timedelta(0)))
+    return duration_text(value)
 
 
 @register.filter
@@ -74,8 +71,8 @@ def signed_duration(value):
     if not isinstance(value, timedelta):
         return "—"
     if value < timedelta(0):
-        return f"−{_format(-value)}"
-    return f"+{_format(value)}"
+        return f"−{duration_text(-value)}"
+    return f"+{duration_text(value)}"
 
 
 @register.filter

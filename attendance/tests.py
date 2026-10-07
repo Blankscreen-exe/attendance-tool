@@ -557,6 +557,82 @@ class ScheduleHistoryTests(AttendanceTestCase):
         self.assertEqual(self.leave_taken(), {"Sick": 1})
 
 
+class BreakAndTimelineTests(AttendanceTestCase):
+    def day(self, number=5, now=LATER):
+        return self.week(now=now).days[number - 5]
+
+    def test_clocking_out_and_back_in_shows_as_a_break(self):
+        self.work(5, hours=4, start_hour=9)  # 9:00 to 1:00
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(5, 13, 30), clock_out=at(5, 15, 30))
+        day = self.day()
+        first, pause, second = day.sequence
+        self.assertEqual((first.is_break, pause.is_break, second.is_break), (False, True, False))
+        self.assertEqual((pause.start, pause.end, pause.duration), (at(5, 13), at(5, 13, 30), HOUR / 2))
+        self.assertEqual((day.worked, day.break_total), (6 * HOUR, HOUR / 2))
+
+    def test_what_does_not_count_as_a_break(self):
+        # Clocked straight back in: a double tap, not a break.
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(5, 9), clock_out=at(5, 12))
+        TimeEntry.objects.create(
+            employee=self.employee, clock_in=at(5, 12) + timedelta(seconds=20), clock_out=at(5, 13)
+        )
+        # Nobody knows when they left, so the gap after it cannot be measured.
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(6, 9), missing_out=True)
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(6, 14), clock_out=at(6, 17))
+        for number in (5, 6, 7):
+            with self.subTest(day=number):
+                day = self.day(number)
+                self.assertEqual(len(day.sequence), len(day.entries))
+                self.assertEqual(day.break_total, timedelta(0))
+
+    def test_timeline_places_work_and_breaks_on_a_shared_axis(self):
+        self.work(5, hours=4, start_hour=9)
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(5, 13, 30), clock_out=at(5, 15, 30))
+        timeline = services.build_timeline([("Mon 5 Oct", None, self.day())], now=LATER)
+        work, pause, more = timeline.rows[0].segments
+        # The default axis runs 8 AM to 6 PM, so 9:00 sits 10% along and 4 hours is 40% wide.
+        self.assertEqual((work.kind, work.left, work.width), ("work", "10.000", "40.000"))
+        self.assertEqual((pause.kind, pause.left, pause.width), ("break", "50.000", "5.000"))
+        self.assertEqual((more.kind, more.left, more.width), ("work", "55.000", "20.000"))
+        self.assertEqual((work.value, work.label), ("4h 00m", "Worked · 9:00 AM – 1:00 PM"))
+        self.assertEqual((pause.value, pause.label), ("0h 30m", "Break · 1:00 PM – 1:30 PM"))
+        self.assertEqual([tick["label"] for tick in timeline.ticks][::2], ["8 AM", "10 AM", "12 PM", "2 PM", "4 PM", "6 PM"])
+        self.assertEqual(timeline.kinds, {"work", "break"})
+        self.assertIsNone(timeline.now_left)  # the day shown is not today
+        self.assertIn("Break · 1:00 PM – 1:30 PM: 0h 30m", timeline.rows[0].summary)
+
+    def test_timeline_axis_stretches_for_early_and_late_work(self):
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(5, 5, 30), clock_out=at(5, 7))
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(5, 21), clock_out=at(6, 1, 15))  # past midnight
+        timeline = services.build_timeline([("Mon 5 Oct", None, self.day())], now=LATER)
+        labels = [tick["label"] for tick in timeline.ticks]
+        self.assertEqual((len(timeline.ticks), labels[0], labels[-1]), (22, "5 AM", "2 AM"))
+        last = timeline.rows[0].segments[-1]
+        self.assertAlmostEqual(float(last.left) + float(last.width), 20.25 / 21 * 100, places=2)
+
+    def test_timeline_shows_someone_still_working_and_a_missing_clock_out(self):
+        now = at(7, 12)
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(6, 9, 30), missing_out=True)
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(7, 9))
+        tuesday, wednesday = self.day(6, now=now), self.day(7, now=now)
+        timeline = services.build_timeline([("Tue", None, tuesday), ("Wed", None, wednesday)], now=now)
+
+        (missing,) = timeline.rows[0].segments
+        self.assertEqual((missing.kind, missing.left, missing.width), ("missing", "15.000", "0.000"))
+        self.assertEqual((missing.value, missing.label), ("No clock-out", "Clocked in at 9:30 AM"))
+
+        (live,) = timeline.rows[1].segments
+        self.assertEqual((live.kind, live.left, live.width, live.value), ("live", "10.000", "30.000", "3h 00m"))
+        self.assertEqual(timeline.now_left, "40.000")  # noon, where the open stretch ends
+        self.assertEqual(timeline.rows[0].summary, "Clocked in at 9:30 AM: No clock-out")
+
+    def test_timeline_row_with_nothing_recorded(self):
+        timeline = services.build_timeline([("sara", "/somewhere/", self.day())], now=LATER)
+        row = timeline.rows[0]
+        self.assertEqual((row.segments, row.summary, row.url), ([], "Nothing recorded", "/somewhere/"))
+        self.assertEqual(timeline.kinds, set())
+
+
 class MonthSummaryTests(AttendanceTestCase):
     def summary(self, first, last, employee=None):
         employee = Employee.objects.get(pk=(employee or self.employee).pk)
@@ -1305,3 +1381,34 @@ class ViewTests(AttendanceTestCase):
         self.assertEqual(self.client.get(reverse("manage_leave")).status_code, 403)
         self.assertEqual(self.client.post(reverse("manage_leave"), {"annual": "99"}).status_code, 403)
         self.assertEqual(LeaveAllowance.objects.get(leave_type="annual").days, 20)
+
+    def test_breaks_and_timeline_appear_on_the_pages(self):
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(7, 5), clock_out=at(7, 9))
+        TimeEntry.objects.create(employee=self.employee, clock_in=at(7, 9, 30))  # back after 30 minutes, still in
+        self.sign_in(self.employee)
+
+        home = self.client.get(reverse("home"))
+        self.assertContains(home, "0h 30m of breaks")
+        self.assertContains(home, "Break ·")
+
+        calendar_page = self.client.get(reverse("calendar"))
+        for text in (
+            "Timeline for October 2026",
+            "Worked · 5:00 AM – 9:00 AM",
+            "Break · 9:00 AM – 9:30 AM",
+            "Working now · since 9:30 AM",
+            "timeline.js",
+        ):
+            with self.subTest(text):
+                self.assertContains(calendar_page, text)
+        # The record table lists the break between the two entries.
+        self.assertContains(calendar_page, 'Break · <span class="tabular-nums">0h 30m</span>', count=1)
+
+        self.sign_in(self.admin)
+        today_page = self.client.get(reverse("manage_dashboard"))
+        self.assertContains(today_page, "Today's timeline")
+        (row,) = today_page.context["timeline"].rows
+        self.assertEqual((row.label, [segment.kind for segment in row.segments]), ("sara", ["work", "break", "live"]))
+        self.assertEqual(today_page.context["timeline"].ticks[0]["label"], "5 AM")
+        detail = self.client.get(reverse("manage_employee_detail", args=[self.employee.pk]))
+        self.assertContains(detail, "Timeline for October 2026")

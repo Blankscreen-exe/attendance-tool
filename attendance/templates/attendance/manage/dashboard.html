@@ -70,4 +70,11 @@
     </tbody>
   </table>
 </div>
+
+{% if rows %}
+<h2 class="section-title mt-8">Today's timeline</h2>
+<div class="mt-2">
+  {% include "attendance/_timeline.html" %}
+</div>
+{% endif %}
 {% endblock %}

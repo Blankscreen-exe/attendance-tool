@@ -42,7 +42,7 @@
       <h2 class="section-title">Today</h2>
       <p id="today-total" data-finished="{{ finished_seconds }}" class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">{{ day.worked|duration }}</p>
       <p class="mt-1 text-sm text-slate-500">
-        {% if day.holiday %}{{ day.holiday.name }}{% elif day.leave %}{{ day.label }}{% elif not day.working %}Day off{% else %}Working day{% endif %}
+        {% if day.holiday %}{{ day.holiday.name }}{% elif day.leave %}{{ day.label }}{% elif not day.working %}Day off{% else %}Working day{% endif %}{% if day.break_total %} · {{ day.break_total|duration }} of breaks{% endif %}
       </p>
     </div>
     <div class="card p-5">
