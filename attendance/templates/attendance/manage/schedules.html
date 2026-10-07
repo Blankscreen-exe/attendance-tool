@@ -1,0 +1,129 @@
+{% extends "attendance/base.html" %}
+{% load attendance_tags %}
+{% block title %}Schedules · Attendance{% endblock %}
+{% block content %}
+<h1 class="page-title">Schedules</h1>
+
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+  <h2 class="section-title">Who works when</h2>
+  <div class="flex items-center gap-2">
+    <a class="btn btn-secondary btn-sm" href="?week={{ prev_week|date:'Y-m-d' }}" aria-label="Previous week">←</a>
+    <span class="min-w-40 text-center text-sm font-semibold text-slate-900">Week of {{ monday|date:"j M Y" }}</span>
+    <a class="btn btn-secondary btn-sm" href="?week={{ next_week|date:'Y-m-d' }}" aria-label="Next week">→</a>
+    {% if not is_current_week %}<a class="btn btn-secondary btn-sm" href="{% url 'manage_schedules' %}">This week</a>{% endif %}
+  </div>
+</div>
+
+<div class="card mt-2 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        {% for day in days %}
+        <th class="text-center {% if day.is_today %}text-slate-900{% endif %}">
+          {{ day.date|date:"D j" }}
+          {% if day.holiday %}<div class="font-medium tracking-normal text-violet-700 normal-case">{{ day.holiday.name }}{% if day.holiday.tentative %} (tentative){% endif %}</div>{% endif %}
+        </th>
+        {% endfor %}
+        <th class="text-right">Target this week</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="whitespace-nowrap">
+          <a class="link" href="{% url 'manage_employee_detail' row.employee.pk %}">{{ row.employee.display_name }}</a>
+          <div class="text-xs text-slate-500">
+            {% if row.week.terms %}
+            {{ row.week.terms.name }} · {{ row.week.terms.hours_label }} a week
+            {% else %}
+            No schedule · <a class="link" href="{% url 'manage_employee_edit' row.employee.pk %}">assign one</a>
+            {% endif %}
+          </div>
+        </td>
+        {% for day in row.week.days %}
+        <td class="text-center whitespace-nowrap">
+          {% if not row.week.terms or not day.in_scope %}
+          <span class="text-slate-300">—</span>
+          {% elif not day.working %}
+          <span class="text-slate-400">Off</span>
+          {% elif day.holiday %}
+          <span class="badge bg-violet-100 text-violet-800">Holiday</span>
+          {% elif day.leave %}
+          <span class="badge bg-sky-100 text-sky-800">{{ day.leave.get_leave_type_display }} leave</span>
+          {% else %}
+          <span class="text-slate-900 tabular-nums">{{ row.week.terms.daily_target|duration }}</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+        <td class="text-right whitespace-nowrap tabular-nums">
+          {% if row.week.target is None %}
+          <span class="text-slate-400">No target</span>
+          {% elif row.week.state == "before" %}
+          <span class="text-slate-300">—</span>
+          {% else %}
+          <span class="font-medium text-slate-900">{{ row.week.target|duration }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" class="py-6 text-center text-slate-500">No active employees yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="mt-2 text-xs text-slate-500">
+  Hours expected on each day. A holiday or approved leave on a working day lowers that week's target by one day's share.
+  Hours actually worked are under Attendance.
+</p>
+
+<div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+  <h2 class="section-title">Schedule definitions</h2>
+  <a class="btn btn-primary" href="{% url 'manage_schedule_new' %}">Add schedule</a>
+</div>
+
+<div class="card mt-2 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Hours a week</th>
+        <th>Working days</th>
+        <th>Hours a day</th>
+        <th>Employees</th>
+        <th><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for schedule in schedules %}
+      <tr>
+        <td>
+          <span class="font-medium text-slate-900">{{ schedule.name }}</span>
+          {% for version in schedule.upcoming %}
+          <div class="text-xs text-sky-700">Changes to {{ version.hours_label }}, {{ version.days_label }} from {{ version.effective_from|date:"j M Y" }}</div>
+          {% endfor %}
+          {% for version in schedule.past %}
+          <div class="text-xs text-slate-500">Was {{ version.hours_label }}, {{ version.days_label }} until {{ version.until|date:"j M Y" }}</div>
+          {% endfor %}
+        </td>
+        <td class="tabular-nums">{{ schedule.current.hours_label }}</td>
+        <td>{{ schedule.current.days_label }}</td>
+        <td class="tabular-nums">{{ schedule.current.daily_target|duration }}</td>
+        <td class="tabular-nums">{{ schedule.employee_count }}</td>
+        <td class="text-right whitespace-nowrap">
+          <a class="btn btn-secondary btn-sm" href="{% url 'manage_schedule_edit' schedule.pk %}">Edit</a>
+          {% if not schedule.use_count %}
+          <form method="post" action="{% url 'manage_schedule_delete' schedule.pk %}" class="inline" onsubmit="return confirm('Delete the {{ schedule.name|escapejs }} schedule?')">
+            {% csrf_token %}
+            <button class="btn btn-secondary btn-sm">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="py-6 text-center text-slate-500">No schedules yet. Add one, then assign it to employees.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

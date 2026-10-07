@@ -1,0 +1,73 @@
+{% extends "attendance/base.html" %}
+{% load attendance_tags %}
+{% block title %}Today · Attendance{% endblock %}
+{% block content %}
+<h1 class="page-title">Today <span class="font-normal text-slate-500">· {{ today|date:"l, j F Y" }}</span></h1>
+
+{% for notice in notices %}
+<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+  {{ notice }} <a class="link" href="{% url 'manage_holidays' %}">Open holidays</a>
+</div>
+{% endfor %}
+
+<div class="mt-4 grid gap-4 sm:grid-cols-2">
+  <div class="card p-5">
+    <h2 class="section-title">Clocked in now</h2>
+    <p class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">
+      {{ clocked_in }} <span class="text-base font-normal text-slate-500">of {{ rows|length }}</span>
+    </p>
+  </div>
+  <a class="card block p-5 hover:border-slate-400" href="{% url 'manage_requests' %}">
+    <h2 class="section-title">Requests waiting</h2>
+    <p class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">{{ pending_request_count|default:0 }}</p>
+  </a>
+</div>
+
+<div class="card mt-4 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Now</th>
+        <th>Today</th>
+        <th class="min-w-56">This week</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>
+          <a class="link" href="{% url 'manage_employee_detail' row.employee.pk %}">{{ row.employee.display_name }}</a>
+        </td>
+        <td class="whitespace-nowrap">
+          {% if row.open_entry %}
+          <span class="badge bg-emerald-100 text-emerald-800">In since {{ row.open_entry.clock_in|time:"g:i A" }}</span>
+          {% elif row.last_entry %}
+          <span class="badge bg-slate-100 text-slate-700">Out since {{ row.last_entry.clock_out|time:"g:i A" }}</span>
+          {% elif row.day.status == "today" %}
+          <span class="badge bg-amber-100 text-amber-800">Not in yet</span>
+          {% else %}
+          <span class="badge bg-slate-100 text-slate-600">{{ row.day.label|default:"—" }}</span>
+          {% endif %}
+        </td>
+        <td class="whitespace-nowrap tabular-nums">{{ row.day.worked|duration }}</td>
+        <td>
+          <div class="flex items-center gap-3">
+            <span class="whitespace-nowrap tabular-nums">
+              {{ row.week.worked|duration }}{% if row.week.target is not None %} <span class="text-slate-500">of {{ row.week.target|duration }}</span>{% endif %}
+            </span>
+            {% if row.week.target is not None %}
+            <div class="h-2 min-w-16 grow overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full {% if row.week.state == 'met' %}bg-emerald-500{% else %}bg-slate-900{% endif %}" style="width: {{ row.week.percent }}%"></div>
+            </div>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="py-6 text-center text-slate-500">No active employees yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

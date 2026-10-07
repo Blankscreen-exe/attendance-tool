@@ -1,0 +1,47 @@
+from django.contrib.auth.views import LogoutView
+from django.urls import path
+
+from . import manage_views, pwa, views
+
+urlpatterns = [
+    path("", views.home, name="home"),
+    path("manifest.webmanifest", pwa.manifest, name="manifest"),
+    path("sw.js", pwa.service_worker, name="service_worker"),
+    path("punch/", views.punch, name="punch"),
+    path("calendar/", views.my_calendar, name="calendar"),
+    path("requests/", views.my_requests, name="my_requests"),
+    path("requests/missing-time/new/", views.missing_time_new, name="missing_time_new"),
+    path("requests/leave/new/", views.leave_new, name="leave_new"),
+    path("requests/<str:kind>/<int:pk>/cancel/", views.request_cancel, name="request_cancel"),
+    path("account/login/", views.SignInView.as_view(), name="login"),
+    path("account/logout/", LogoutView.as_view(), name="logout"),
+    path("account/password/", views.OwnPasswordView.as_view(), name="password_change"),
+    # Admin
+    path("manage/", manage_views.dashboard, name="manage_dashboard"),
+    path("manage/attendance/", manage_views.review, name="manage_review"),
+    path("manage/attendance/daily.csv", manage_views.export_daily, name="manage_export_daily"),
+    path("manage/attendance/weekly.csv", manage_views.export_weekly, name="manage_export_weekly"),
+    path("manage/attendance/monthly/", manage_views.monthly, name="manage_monthly"),
+    path("manage/attendance/monthly.csv", manage_views.export_monthly, name="manage_export_monthly"),
+    path("manage/requests/", manage_views.requests_inbox, name="manage_requests"),
+    path("manage/requests/<str:kind>/<int:pk>/decide/", manage_views.request_decide, name="manage_request_decide"),
+    path("manage/requests/leave/<int:pk>/cancel/", manage_views.leave_cancel, name="manage_leave_cancel"),
+    path("manage/employees/", manage_views.employees, name="manage_employees"),
+    path("manage/employees/new/", manage_views.employee_new, name="manage_employee_new"),
+    path("manage/employees/<int:pk>/", manage_views.employee_detail, name="manage_employee_detail"),
+    path("manage/employees/<int:pk>/edit/", manage_views.employee_edit, name="manage_employee_edit"),
+    path("manage/employees/<int:pk>/password/", manage_views.employee_password, name="manage_employee_password"),
+    path("manage/employees/<int:employee_pk>/entries/new/", manage_views.entry_new, name="manage_entry_new"),
+    path("manage/entries/<int:pk>/edit/", manage_views.entry_edit, name="manage_entry_edit"),
+    path("manage/entries/<int:pk>/remove/", manage_views.entry_remove, name="manage_entry_remove"),
+    path("manage/schedules/", manage_views.schedules, name="manage_schedules"),
+    path("manage/schedules/new/", manage_views.schedule_edit, name="manage_schedule_new"),
+    path("manage/schedules/<int:pk>/edit/", manage_views.schedule_edit, name="manage_schedule_edit"),
+    path("manage/schedules/<int:pk>/delete/", manage_views.schedule_delete, name="manage_schedule_delete"),
+    path("manage/leave/", manage_views.leave_overview, name="manage_leave"),
+    path("manage/holidays/", manage_views.holidays, name="manage_holidays"),
+    path("manage/holidays/new/", manage_views.holiday_edit, name="manage_holiday_new"),
+    path("manage/holidays/preset/", manage_views.holiday_preset, name="manage_holiday_preset"),
+    path("manage/holidays/<int:pk>/edit/", manage_views.holiday_edit, name="manage_holiday_edit"),
+    path("manage/holidays/<int:pk>/delete/", manage_views.holiday_delete, name="manage_holiday_delete"),
+]

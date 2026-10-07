@@ -1,0 +1,28 @@
+# Optional: run against Postgres instead of SQLite.
+#   docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d --build
+# Set POSTGRES_PASSWORD in .env first.
+services:
+  web:
+    environment:
+      DATABASE_URL: postgres://attendance:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/attendance
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: attendance
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: attendance
+    volumes:
+      - attendance_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U attendance"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  attendance_pg:

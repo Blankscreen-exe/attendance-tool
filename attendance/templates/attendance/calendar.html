@@ -1,0 +1,19 @@
+{% extends "attendance/base.html" %}
+{% block title %}Calendar · Attendance{% endblock %}
+{% block content %}
+<h1 class="page-title">My calendar</h1>
+<div class="mt-4">
+  {% include "attendance/_calendar.html" %}
+</div>
+
+<h2 class="section-title mt-8">Record for {{ month|date:"F Y" }}</h2>
+{% if days_with_entries %}
+<div class="card mt-2 overflow-x-auto">
+  {% include "attendance/_entries_table.html" with days=days_with_entries show_fix=True %}
+</div>
+{% else %}
+<p class="card mt-2 px-4 py-6 text-center text-sm text-slate-500">Nothing recorded in this month.</p>
+{% endif %}
+
+{% include "attendance/_corrections.html" %}
+{% endblock %}

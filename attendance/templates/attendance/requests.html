@@ -1,0 +1,36 @@
+{% extends "attendance/base.html" %}
+{% load attendance_tags %}
+{% block title %}Requests · Attendance{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="page-title">My requests</h1>
+  <div class="flex flex-wrap gap-2">
+    <a class="btn btn-primary" href="{% url 'missing_time_new' %}">Log missing time</a>
+    <a class="btn btn-secondary" href="{% url 'leave_new' %}">Request leave</a>
+  </div>
+</div>
+
+{% if leave_balances %}
+<h2 class="section-title mt-6">Leave in {{ year }}</h2>
+<div class="mt-2 grid gap-3 sm:grid-cols-3">
+  {% for balance in leave_balances %}
+  <div class="card p-4">
+    <h3 class="text-sm font-medium text-slate-600">{{ balance.label }}</h3>
+    {% if balance.allowance is None %}
+    <p class="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">{{ balance.taken }} <span class="text-base font-normal text-slate-500">day{{ balance.taken|pluralize }} taken</span></p>
+    <p class="text-sm text-slate-500">No yearly limit{% if balance.pending %} · {{ balance.pending }} waiting for approval{% endif %}</p>
+    {% elif balance.remaining < 0 %}
+    <p class="mt-1 text-2xl font-semibold text-rose-700 tabular-nums">{{ balance.remaining|cut:"-" }} <span class="text-base font-normal">over the allowance</span></p>
+    <p class="text-sm text-slate-500">{{ balance.taken }} of {{ balance.allowance }} used{% if balance.pending %} · {{ balance.pending }} waiting for approval{% endif %}</p>
+    {% else %}
+    <p class="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">{{ balance.remaining }} <span class="text-base font-normal text-slate-500">day{{ balance.remaining|pluralize }} left</span></p>
+    <p class="text-sm text-slate-500">{{ balance.taken }} of {{ balance.allowance }} used{% if balance.pending %} · {{ balance.pending }} waiting for approval{% endif %}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% include "attendance/_my_request_list.html" with heading="Missing time" items=missing_requests %}
+{% include "attendance/_my_request_list.html" with heading="Leave" items=leave_requests %}
+{% endblock %}

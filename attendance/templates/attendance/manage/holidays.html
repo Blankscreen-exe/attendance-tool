@@ -1,0 +1,58 @@
+{% extends "attendance/base.html" %}
+{% block title %}Holidays · Attendance{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <div class="flex items-center gap-2">
+    <h1 class="page-title">Holidays</h1>
+    <a class="btn btn-secondary btn-sm ml-2" href="?year={{ year|add:"-1" }}" aria-label="Previous year">←</a>
+    <span class="text-base font-semibold text-slate-900 tabular-nums">{{ year }}</span>
+    <a class="btn btn-secondary btn-sm" href="?year={{ year|add:"1" }}" aria-label="Next year">→</a>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <form method="post" action="{% url 'manage_holiday_preset' %}">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ year }}">
+      <button class="btn btn-secondary">Add estimated Islamic holidays for {{ year }}</button>
+    </form>
+    <a class="btn btn-primary" href="{% url 'manage_holiday_new' %}">Add holiday</a>
+  </div>
+</div>
+<p class="mt-1 text-sm text-slate-600">
+  A holiday on a working day lowers that week's hours target. Eid, Ashura and Eid Milad un-Nabi depend on moon sighting:
+  estimated dates are marked tentative and still count, so correct them when the dates are announced.
+</p>
+
+<div class="card mt-4 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Holiday</th>
+        <th><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for day, holiday in occurrences %}
+      <tr>
+        <td class="whitespace-nowrap tabular-nums">{{ day|date:"D j M Y" }}</td>
+        <td>
+          <span class="font-medium text-slate-900">{{ holiday.name }}</span>
+          {% if holiday.recurs_yearly %}<span class="badge ml-1 bg-slate-100 text-slate-600">Every year</span>{% endif %}
+          {% if holiday.tentative %}<span class="badge ml-1 bg-amber-100 text-amber-800">Tentative</span>{% endif %}
+        </td>
+        <td class="text-right whitespace-nowrap">
+          <a class="btn btn-secondary btn-sm" href="{% url 'manage_holiday_edit' holiday.pk %}">Edit</a>
+          <form method="post" action="{% url 'manage_holiday_delete' holiday.pk %}" class="inline" onsubmit="return confirm('Remove {{ holiday.name|escapejs }}{% if holiday.recurs_yearly %} from every year{% endif %}?')">
+            {% csrf_token %}
+            <input type="hidden" name="year" value="{{ year }}">
+            <button class="btn btn-secondary btn-sm">{% if holiday.recurs_yearly %}Delete for all years{% else %}Delete{% endif %}</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="py-6 text-center text-slate-500">No holidays in {{ year }}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

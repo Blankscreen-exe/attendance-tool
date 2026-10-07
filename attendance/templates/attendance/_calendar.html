@@ -1,0 +1,50 @@
+{% load attendance_tags %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <div class="flex items-center gap-2">
+    <a class="btn btn-secondary btn-sm" href="{{ calendar_url }}?month={{ prev_month|date:'Y-m' }}" aria-label="Previous month">←</a>
+    <h2 class="min-w-36 text-center text-base font-semibold text-slate-900">{{ month|date:"F Y" }}</h2>
+    <a class="btn btn-secondary btn-sm" href="{{ calendar_url }}?month={{ next_month|date:'Y-m' }}" aria-label="Next month">→</a>
+  </div>
+  <p class="text-sm text-slate-600">Worked this month: <strong class="text-slate-900 tabular-nums">{{ month_worked|duration }}</strong></p>
+</div>
+
+<div class="card mt-3 overflow-hidden">
+  <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-xs font-semibold tracking-wide text-slate-500 uppercase">
+    {% for name in weekday_names %}<div class="py-2">{{ name }}</div>{% endfor %}
+  </div>
+  {% for week in weeks %}
+  <div class="{% if not forloop.last %}border-b border-slate-200{% endif %}">
+    <div class="grid grid-cols-7 gap-0.5 p-1 sm:gap-1.5 sm:p-2">
+      {% for day in week.days %}
+      <div class="flex min-h-16 flex-col overflow-hidden rounded-lg border p-1 sm:min-h-24 sm:p-2 {{ day.status|day_style }}{% if day.muted %} opacity-40{% endif %}{% if day.is_today %} ring-2 ring-slate-900{% endif %}"
+           title="{{ day.date|date:'l j F' }}{% if day.label %}: {{ day.label }}{% endif %}{% if day.holiday.tentative %} (tentative date){% endif %}">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold">{{ day.date.day }}</span>
+          {% if day.holiday.tentative %}<span class="text-[10px] font-medium">tentative</span>{% endif %}
+        </div>
+        <p class="mt-0.5 line-clamp-2 text-[10px] leading-tight sm:text-xs{% if day.status == 'present' %} hidden sm:block{% endif %}">{{ day.label }}</p>
+        {% if day.entries %}<p class="mt-auto text-[10px] font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-sm sm:tracking-normal">{{ day.worked|duration }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if week.state != "before" %}
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 bg-slate-50 px-3 py-2 text-xs text-slate-600 sm:text-sm">
+      <span>Week of {{ week.start|date:"j M" }}</span>
+      <span class="font-semibold text-slate-900 tabular-nums">
+        {{ week.worked|duration }}{% if week.target is not None %} of {{ week.target|duration }}{% endif %}
+      </span>
+      <span class="ml-auto">{% include "attendance/_week_badge.html" %}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full {{ 'present'|dot_style }}"></span>Present</li>
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full {{ 'absent'|dot_style }}"></span>Absent</li>
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full {{ 'leave'|dot_style }}"></span>Leave</li>
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full {{ 'holiday'|dot_style }}"></span>Holiday</li>
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full {{ 'missing'|dot_style }}"></span>No clock-out</li>
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full {{ 'off'|dot_style }}"></span>Day off</li>
+</ul>

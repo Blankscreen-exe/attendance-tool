@@ -1,0 +1,50 @@
+{% extends "attendance/base.html" %}
+{% block title %}Employees · Attendance{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="page-title">Employees</h1>
+  <a class="btn btn-primary" href="{% url 'manage_employee_new' %}">Add employee</a>
+</div>
+
+<div class="card mt-4 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Username</th>
+        <th>Schedule</th>
+        <th>Tracked since</th>
+        <th><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for employee in employees %}
+      <tr class="{% if not employee.is_active %}text-slate-400{% endif %}">
+        <td class="whitespace-nowrap">
+          {% if employee.is_staff %}
+          <span class="font-medium text-slate-900">{{ employee.display_name }}</span>
+          <span class="badge ml-1 bg-slate-900 text-white">Admin</span>
+          {% else %}
+          <a class="link" href="{% url 'manage_employee_detail' employee.pk %}">{{ employee.display_name }}</a>
+          {% endif %}
+          {% if not employee.is_active %}<span class="badge ml-1 bg-slate-200 text-slate-700">Inactive</span>{% endif %}
+          {% if employee.locked_until %}<span class="badge ml-1 bg-amber-100 text-amber-800" title="Too many wrong passwords. Setting a new password unlocks it.">Locked until {{ employee.locked_until|time:"g:i A" }}</span>{% endif %}
+        </td>
+        <td>{{ employee.username }}</td>
+        <td class="whitespace-nowrap">
+          {% if employee.is_staff %}<span class="text-slate-300">—</span>
+          {% elif employee.terms %}{{ employee.terms.name }} <span class="text-slate-500">· {{ employee.terms.hours_label }}</span>
+          {% else %}<span class="text-slate-400">None</span>{% endif %}
+        </td>
+        <td class="whitespace-nowrap">{% if employee.is_staff %}<span class="text-slate-300">—</span>{% else %}{{ employee.start_date|date:"j M Y" }}{% endif %}</td>
+        <td class="text-right whitespace-nowrap">
+          <a class="btn btn-secondary btn-sm" href="{% url 'manage_employee_edit' employee.pk %}">Edit</a>
+          <a class="btn btn-secondary btn-sm" href="{% url 'manage_employee_password' employee.pk %}">Password</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="mt-3 text-xs text-slate-500">Employees are never deleted, so their record stays. Untick "Active" to stop someone signing in. Admins run the system and do not clock in.</p>
+{% endblock %}

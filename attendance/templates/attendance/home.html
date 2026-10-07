@@ -1,0 +1,133 @@
+{% extends "attendance/base.html" %}
+{% load attendance_tags %}
+{% block content %}
+<div class="mx-auto max-w-2xl space-y-5">
+
+  <section id="punch" class="card p-6 text-center sm:p-8"
+           data-now="{{ now_ms }}" data-open="{{ open_ms|default:'' }}" data-zone="{{ time_zone }}">
+    <p class="text-sm text-slate-500">{{ now|date:"l, j F Y" }}</p>
+    <p id="clock" class="mt-1 text-4xl font-semibold tracking-tight text-slate-900 tabular-nums">{{ now|time:"g:i:s A" }}</p>
+
+    <form method="post" action="{% url 'punch' %}" id="punch-form" class="mt-6">
+      {% csrf_token %}
+      {% if open_entry %}
+      <input type="hidden" name="action" value="out">
+      <button class="inline-flex size-40 cursor-pointer items-center justify-center rounded-full bg-rose-600 text-xl font-semibold text-white shadow-lg transition hover:bg-rose-700 focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-rose-600 active:scale-95 disabled:opacity-60">Clock out</button>
+      <p class="mt-5 text-sm text-slate-600">
+        Clocked in since <strong class="text-slate-900">{{ open_entry.clock_in|time:"g:i A" }}</strong>
+        · <span id="elapsed" class="tabular-nums">{{ open_entry.worked|duration }}</span>
+      </p>
+      {% else %}
+      <input type="hidden" name="action" value="in">
+      <button class="inline-flex size-40 cursor-pointer items-center justify-center rounded-full bg-emerald-600 text-xl font-semibold text-white shadow-lg transition hover:bg-emerald-700 focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-emerald-600 active:scale-95 disabled:opacity-60">Clock in</button>
+      <p class="mt-5 text-sm text-slate-600">You are clocked out.</p>
+      {% endif %}
+    </form>
+    <p class="mt-2 text-xs text-slate-400">The server records the time when you press the button.</p>
+    <button type="button" id="install" hidden class="btn btn-secondary btn-sm mt-4">Add to home screen</button>
+  </section>
+
+  {% for entry in unresolved %}
+  <div class="flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <p class="grow">
+      No clock-out on <strong>{{ entry.clock_in|date:"l j F" }}</strong> (in at {{ entry.clock_in|time:"g:i A" }}).
+      That day counts zero hours until it is fixed.
+    </p>
+    <a class="btn btn-secondary btn-sm" href="{% url 'missing_time_new' %}?entry={{ entry.pk }}">Add clock-out</a>
+  </div>
+  {% endfor %}
+
+  <section class="grid gap-4 sm:grid-cols-2">
+    <div class="card p-5">
+      <h2 class="section-title">Today</h2>
+      <p id="today-total" data-finished="{{ finished_seconds }}" class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">{{ day.worked|duration }}</p>
+      <p class="mt-1 text-sm text-slate-500">
+        {% if day.holiday %}{{ day.holiday.name }}{% elif day.leave %}{{ day.label }}{% elif not day.working %}Day off{% else %}Working day{% endif %}
+      </p>
+    </div>
+    <div class="card p-5">
+      <h2 class="section-title">This week</h2>
+      <p class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">
+        {{ week.worked|duration }}
+        {% if week.target is not None %}<span class="text-base font-normal text-slate-500">of {{ week.target|duration }}</span>{% endif %}
+      </p>
+      {% if week.target is not None %}
+      <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+        <div class="h-full rounded-full {% if week.state == 'met' %}bg-emerald-500{% else %}bg-slate-900{% endif %}" style="width: {{ week.percent }}%"></div>
+      </div>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if week.state == "met" %}Weekly hours completed.{% else %}{{ week.remaining|duration }} to go.{% endif %}
+      </p>
+      {% else %}
+      <p class="mt-1 text-sm text-slate-500">No weekly target is set for you.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section>
+    <div class="flex items-center justify-between">
+      <h2 class="section-title">Today's record</h2>
+      <a class="link text-sm" href="{% url 'missing_time_new' %}">Forgot to clock in?</a>
+    </div>
+    {% if day.entries %}
+    <div class="card mt-2 overflow-x-auto">
+      {% include "attendance/_entries_table.html" with days=today_days show_fix=True %}
+    </div>
+    {% else %}
+    <p class="card mt-2 px-4 py-6 text-center text-sm text-slate-500">Nothing recorded yet today.</p>
+    {% endif %}
+  </section>
+</div>
+
+<script>
+(function () {
+  var box = document.getElementById("punch");
+  var offset = Number(box.dataset.now) - Date.now();
+  var openedAt = box.dataset.open ? Number(box.dataset.open) : null;
+  var clock = document.getElementById("clock");
+  var elapsed = document.getElementById("elapsed");
+  var total = document.getElementById("today-total");
+  var finished = Number(total.dataset.finished);
+  var format = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true, timeZone: box.dataset.zone
+  });
+
+  function duration(seconds) {
+    var minutes = Math.floor(Math.max(seconds, 0) / 60);
+    return Math.floor(minutes / 60) + "h " + String(minutes % 60).padStart(2, "0") + "m";
+  }
+
+  function tick() {
+    var now = Date.now() + offset;
+    clock.textContent = format.format(now);
+    if (openedAt !== null) {
+      var running = (now - openedAt) / 1000;
+      elapsed.textContent = duration(running);
+      total.textContent = duration(finished + running);
+    }
+  }
+
+  tick();
+  setInterval(tick, 1000);
+
+  // Browsers that can install the site as an app say so with this event; only
+  // then is the button shown. (On an iPhone it is Share, then Add to Home Screen.)
+  var install = document.getElementById("install");
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    install.hidden = false;
+    install.onclick = function () {
+      install.hidden = true;
+      event.prompt();
+    };
+  });
+
+  // One press is enough: block a second submit while the first is on its way.
+  document.getElementById("punch-form").addEventListener("submit", function (event) {
+    var button = event.target.querySelector("button");
+    if (button.disabled) { event.preventDefault(); return; }
+    setTimeout(function () { button.disabled = true; }, 0);
+  });
+})();
+</script>
+{% endblock %}

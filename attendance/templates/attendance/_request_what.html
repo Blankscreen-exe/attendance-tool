@@ -1,0 +1,6 @@
+{% load attendance_tags %}{% if item.kind == "leave" %}<span class="font-medium text-slate-900">{{ item.get_leave_type_display }} leave</span>
+<span class="whitespace-nowrap">{{ item.start_date|date:"D j M Y" }}{% if item.end_date != item.start_date %} → {{ item.end_date|date:"D j M Y" }}{% endif %}</span>
+<span class="text-slate-500">({{ item.calendar_days }} day{{ item.calendar_days|pluralize }})</span>{% else %}<span class="font-medium text-slate-900">{% if item.entry_id %}Missing clock-out{% else %}Missing time{% endif %}</span>
+<span class="whitespace-nowrap">{{ item.clock_in|date:"D j M Y" }},</span>
+<span class="whitespace-nowrap tabular-nums">{{ item.clock_in|time:"g:i A" }} → {{ item.clock_out|time:"g:i A" }}</span>
+<span class="text-slate-500">({{ item.duration|duration }})</span>{% endif %}

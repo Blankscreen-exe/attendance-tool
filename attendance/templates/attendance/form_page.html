@@ -1,0 +1,16 @@
+{% extends "attendance/base.html" %}
+{% block title %}{{ title }} · Attendance{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl">
+  <h1 class="page-title">{{ title }}</h1>
+  {% if intro %}<p class="mt-1 text-sm text-slate-600">{{ intro }}</p>{% endif %}
+  <form method="post" class="card mt-4 flex flex-wrap gap-x-6 gap-y-4 p-5" novalidate>
+    {% csrf_token %}
+    {% include "attendance/_form_fields.html" %}
+    <div class="flex w-full items-center gap-3 border-t border-slate-100 pt-4">
+      <button class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ submit_label }}</button>
+      <a class="btn btn-secondary" href="{{ cancel_url }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

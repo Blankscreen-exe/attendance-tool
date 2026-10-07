@@ -1,0 +1,62 @@
+{% load static attendance_tags %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Attendance{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'attendance/app.css' %}">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'attendance/icons/favicon-32.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'attendance/icons/apple-touch-icon.png' %}">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Attendance">
+</head>
+<body class="min-h-screen">
+  {% if user.is_authenticated %}
+  <header class="border-b border-slate-200 bg-white print:hidden">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+      <a href="{% url 'home' %}" class="mr-2 text-base font-semibold tracking-tight text-slate-900">Attendance</a>
+      <nav class="flex flex-wrap items-center gap-1" aria-label="Main">
+        {% if user.is_staff %}
+        <a class="nav-link {% active 'manage_dashboard' %}" href="{% url 'manage_dashboard' %}">Today</a>
+        <a class="nav-link {% active 'manage_review' 'manage_monthly' %}" href="{% url 'manage_review' %}">Attendance</a>
+        <a class="nav-link {% active 'manage_request' %}" href="{% url 'manage_requests' %}">
+          Requests
+          {% if pending_request_count %}<span class="badge ml-1 bg-amber-100 text-amber-800">{{ pending_request_count }}</span>{% endif %}
+        </a>
+        <a class="nav-link {% active 'manage_employee' %}" href="{% url 'manage_employees' %}">Employees</a>
+        <a class="nav-link {% active 'manage_schedule' %}" href="{% url 'manage_schedules' %}">Schedules</a>
+        <a class="nav-link {% active 'manage_holiday' %}" href="{% url 'manage_holidays' %}">Holidays</a>
+        <a class="nav-link {% active 'manage_leave' %}" href="{% url 'manage_leave' %}">Leave</a>
+        {% else %}
+        <a class="nav-link {% active 'home' %}" href="{% url 'home' %}">Clock</a>
+        <a class="nav-link {% active 'calendar' %}" href="{% url 'calendar' %}">Calendar</a>
+        <a class="nav-link {% active 'my_requests' 'missing_time_new' 'leave_new' %}" href="{% url 'my_requests' %}">Requests</a>
+        {% endif %}
+      </nav>
+      <div class="ml-auto flex items-center gap-3 text-sm text-slate-600">
+        <a href="{% url 'password_change' %}" class="hover:text-slate-900" title="Change password">{{ user.display_name }}</a>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="btn btn-secondary btn-sm">Sign out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="mx-auto max-w-6xl px-4 py-6">
+    {% for message in messages %}
+    <div class="mb-4 rounded-lg border px-4 py-3 text-sm {{ message.tags|message_style }}" role="status">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("{% url 'service_worker' %}").catch(function () {});
+    }
+  </script>
+</body>
+</html>

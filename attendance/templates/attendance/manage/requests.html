@@ -1,0 +1,78 @@
+{% extends "attendance/base.html" %}
+{% load attendance_tags %}
+{% block title %}Requests · Attendance{% endblock %}
+{% block content %}
+<h1 class="page-title">Requests</h1>
+
+<h2 class="section-title mt-6">Waiting for a decision</h2>
+{% for item in pending %}
+<div class="card mt-2 p-4">
+  <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <a class="link" href="{% url 'manage_employee_detail' item.employee.pk %}">{{ item.employee.display_name }}</a>
+    <span class="text-xs text-slate-500">Sent {{ item.created_at|date:"D j M, g:i A" }}</span>
+  </div>
+  <p class="mt-2 text-sm text-slate-700">{% include "attendance/_request_what.html" %}</p>
+  {% if item.kind == "leave" %}
+  <p class="mt-1 text-sm text-slate-600">
+    Uses {{ item.days_used }} working day{{ item.days_used|pluralize }}.
+    {% if item.balance.allowance is not None %}
+    {{ item.balance.label }} leave in {{ item.start_date.year }}: {{ item.balance.taken }} of {{ item.balance.allowance }} already used.
+    {% endif %}
+    {% if item.balance.over_by %}
+    <span class="badge bg-amber-100 text-amber-800">{{ item.balance.over_by }} day{{ item.balance.over_by|pluralize }} over the allowance if approved</span>
+    {% endif %}
+  </p>
+  {% endif %}
+  <p class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{{ item.reason }}</p>
+  <form method="post" action="{% url 'manage_request_decide' item.kind item.pk %}" class="mt-3 flex flex-wrap items-center gap-2">
+    {% csrf_token %}
+    <input class="input max-w-md grow" type="text" name="note" maxlength="1000" placeholder="Note to the employee (optional)" aria-label="Note to the employee">
+    <button class="btn btn-success" name="decision" value="approve">Approve</button>
+    <button class="btn btn-danger" name="decision" value="reject">Reject</button>
+  </form>
+</div>
+{% empty %}
+<p class="card mt-2 px-4 py-6 text-center text-sm text-slate-500">Nothing is waiting.</p>
+{% endfor %}
+
+<h2 class="section-title mt-8">Recently decided</h2>
+{% if decided %}
+<div class="card mt-2 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Request</th>
+        <th>Reason</th>
+        <th>Outcome</th>
+        <th><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in decided %}
+      <tr>
+        <td class="whitespace-nowrap">{{ item.employee.display_name }}</td>
+        <td>{% include "attendance/_request_what.html" %}</td>
+        <td class="text-slate-600">{{ item.reason }}</td>
+        <td>
+          <span class="badge {{ item.status|badge_style }}">{{ item.get_status_display }}</span>
+          {% if item.decided_by %}<p class="mt-1 text-xs text-slate-500">{{ item.decided_by.display_name }}, {{ item.decided_at|date:"j M" }}</p>{% endif %}
+          {% if item.decision_note %}<p class="mt-1 text-xs text-slate-500">{{ item.decision_note }}</p>{% endif %}
+        </td>
+        <td class="text-right">
+          {% if item.kind == "leave" and item.status == "approved" %}
+          <form method="post" action="{% url 'manage_leave_cancel' item.pk %}" onsubmit="return confirm('Cancel this approved leave? Those days will count towards the weekly target again.')">
+            {% csrf_token %}
+            <button class="btn btn-secondary btn-sm">Cancel leave</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="card mt-2 px-4 py-6 text-center text-sm text-slate-500">No decisions yet.</p>
+{% endif %}
+{% endblock %}

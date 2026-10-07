@@ -1,0 +1,14 @@
+# SQLite deployment: one container, with the database in a named volume.
+#   docker compose up -d --build
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - attendance_data:/app/data
+
+volumes:
+  attendance_data:

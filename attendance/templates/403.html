@@ -1,0 +1,9 @@
+{% extends "attendance/base.html" %}
+{% block title %}Not allowed · Attendance{% endblock %}
+{% block content %}
+<div class="mx-auto mt-10 max-w-md text-center">
+  <h1 class="page-title">This page is for admins</h1>
+  <p class="mt-2 text-sm text-slate-600">Your account does not have access to it.</p>
+  <a class="btn btn-primary mt-5" href="{% url 'home' %}">Back to the start</a>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% if corrections %}
+<h2 class="section-title mt-8">Admin corrections</h2>
+<div class="card mt-2 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Change</th>
+        <th>Reason</th>
+        <th>By</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for correction in corrections %}
+      <tr>
+        <td class="whitespace-nowrap">{{ correction.created_at|date:"j M Y, g:i A" }}</td>
+        <td>
+          <span class="font-medium text-slate-900">{{ correction.get_action_display }}</span>
+          {% if correction.old_clock_in %}
+          <span class="whitespace-nowrap {% if correction.new_clock_in %}text-slate-400 line-through{% endif %}">
+            {{ correction.old_clock_in|date:"D j M" }}, {{ correction.old_clock_in|time:"g:i A" }} → {% if correction.old_clock_out %}{{ correction.old_clock_out|time:"g:i A" }}{% else %}no clock-out{% endif %}
+          </span>
+          {% endif %}
+          {% if correction.old_clock_in and correction.new_clock_in %}<span class="text-slate-500">to</span>{% endif %}
+          {% if correction.new_clock_in %}
+          <span class="whitespace-nowrap">
+            {{ correction.new_clock_in|date:"D j M" }}, {{ correction.new_clock_in|time:"g:i A" }} → {{ correction.new_clock_out|time:"g:i A" }}
+          </span>
+          {% endif %}
+        </td>
+        <td class="text-slate-600">{{ correction.reason }}</td>
+        <td class="whitespace-nowrap">{{ correction.admin.display_name|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

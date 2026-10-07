@@ -1,0 +1,6 @@
+Django>=5.2,<5.3
+dj-database-url>=2.3
+whitenoise>=6.8
+psycopg[binary]>=3.2
+tzdata
+gunicorn>=23.0; sys_platform != "win32"

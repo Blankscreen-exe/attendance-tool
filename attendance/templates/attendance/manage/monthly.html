@@ -1,0 +1,73 @@
+{% extends "attendance/base.html" %}
+{% load attendance_tags %}
+{% block title %}{{ month|date:"F Y" }} summary · Attendance{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="page-title">Attendance <span class="font-normal text-slate-500">· {{ month|date:"F Y" }}</span></h1>
+  {% include "attendance/manage/_attendance_tabs.html" with tab="monthly" %}
+</div>
+
+<div class="mt-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
+  <div class="flex items-center gap-2">
+    <a class="btn btn-secondary btn-sm" href="?month={{ prev_month|date:'Y-m' }}" aria-label="Previous month">←</a>
+    <span class="min-w-36 text-center text-base font-semibold text-slate-900">{{ month|date:"F Y" }}</span>
+    <a class="btn btn-secondary btn-sm" href="?month={{ next_month|date:'Y-m' }}" aria-label="Next month">→</a>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+    <a class="btn btn-secondary" href="{% url 'manage_export_monthly' %}?month={{ month|date:'Y-m' }}">CSV</a>
+  </div>
+</div>
+
+{% if rows %}
+{% if not complete %}
+<p class="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+  This month is still running. Days and hours are counted up to {{ through|date:"l j F" }}.
+</p>
+{% endif %}
+
+<div class="card mt-4 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th class="text-right">Expected days</th>
+        <th class="text-right">Present</th>
+        <th class="text-right">No clock-out</th>
+        <th class="text-right">Absent</th>
+        <th class="text-right">Leave</th>
+        <th class="text-right">Holidays</th>
+        <th class="text-right">Hours worked</th>
+        <th class="text-right">Target</th>
+        <th class="text-right">Difference</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="whitespace-nowrap">
+          <a class="link" href="{% url 'manage_employee_detail' row.employee.pk %}?month={{ month|date:'Y-m' }}">{{ row.employee.display_name }}</a>
+          <div class="text-xs text-slate-500">{{ row.terms.name|default:"No schedule" }}{% if not row.employee.is_active %} · inactive{% endif %}</div>
+        </td>
+        <td class="text-right tabular-nums">{{ row.expected_days }}</td>
+        <td class="text-right tabular-nums">{{ row.present }}</td>
+        <td class="text-right tabular-nums {% if row.missing %}font-semibold text-amber-700{% endif %}">{{ row.missing }}</td>
+        <td class="text-right tabular-nums {% if row.absent %}font-semibold text-rose-700{% endif %}">{{ row.absent }}</td>
+        <td class="text-right tabular-nums">{{ row.leave }}</td>
+        <td class="text-right tabular-nums">{{ row.holidays }}</td>
+        <td class="text-right whitespace-nowrap tabular-nums">{{ row.worked|duration }}</td>
+        <td class="text-right whitespace-nowrap tabular-nums">{{ row.target|duration }}</td>
+        <td class="text-right whitespace-nowrap tabular-nums font-medium {% if row.difference is None %}text-slate-400{% elif row.difference.total_seconds < 0 %}text-rose-700{% else %}text-emerald-700{% endif %}">{{ row.difference|signed_duration }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="mt-3 text-xs text-slate-500">
+  Expected days are working days that were neither a holiday nor approved leave. The target is those days' share of the weekly hours.
+  A day with no clock-out counts zero hours until it is corrected.
+</p>
+{% else %}
+<p class="card mt-4 px-4 py-6 text-center text-sm text-slate-500">Nothing to report for {{ month|date:"F Y" }} yet.</p>
+{% endif %}
+{% endblock %}

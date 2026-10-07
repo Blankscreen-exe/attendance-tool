@@ -1,0 +1,51 @@
+{% load attendance_tags %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>In</th>
+      <th>Out</th>
+      <th>Worked</th>
+      <th>Note</th>
+      {% if manage %}<th class="print:hidden"><span class="sr-only">Actions</span></th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for day in days %}
+    {% for entry in day.entries %}
+    <tr>
+      <td class="whitespace-nowrap {% if not forloop.first %}text-slate-300{% endif %}">{{ day.date|date:"D j M" }}</td>
+      <td class="whitespace-nowrap tabular-nums">{{ entry.clock_in|time:"g:i A" }}</td>
+      <td class="whitespace-nowrap tabular-nums">
+        {% if entry.clock_out %}{{ entry.clock_out|time:"g:i A" }}
+        {% elif entry.missing_out %}<span class="badge bg-amber-100 text-amber-800">Missing</span>
+        {% else %}<span class="badge bg-sky-100 text-sky-800">Working</span>{% endif %}
+      </td>
+      <td class="whitespace-nowrap tabular-nums">{% if entry.is_open %}—{% else %}{{ entry.worked|duration }}{% endif %}</td>
+      <td class="text-slate-600">
+        {% if entry.source == "admin" %}
+          <span class="badge bg-slate-200 text-slate-700">Admin correction</span>
+          <span class="ml-1">{{ entry.note }}</span>
+        {% elif entry.source == "manual" %}
+          <span class="badge bg-slate-200 text-slate-700">Manual</span>
+          {% if entry.request %}<span class="ml-1">{{ entry.request.reason }}</span>{% endif %}
+        {% elif entry.source == "adjusted" %}
+          <span class="badge bg-slate-200 text-slate-700">Clock-out added</span>
+          {% if entry.request %}<span class="ml-1">{{ entry.request.reason }}</span>{% endif %}
+        {% elif entry.missing_out %}
+          {% if entry.has_pending_fix %}Request waiting for approval
+          {% elif show_fix %}<a class="link" href="{% url 'missing_time_new' %}?entry={{ entry.pk }}">Add clock-out</a>
+          {% else %}Counts zero hours until fixed{% endif %}
+        {% endif %}
+      </td>
+      {% if manage %}
+      <td class="text-right whitespace-nowrap print:hidden">
+        <a class="btn btn-secondary btn-sm" href="{% url 'manage_entry_edit' entry.pk %}">Correct</a>
+        <a class="btn btn-secondary btn-sm" href="{% url 'manage_entry_remove' entry.pk %}">Remove</a>
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>

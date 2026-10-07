@@ -1,0 +1,90 @@
+/*
+ * Source for the compiled stylesheet at attendance/static/attendance/app.css.
+ * Rebuild after changing templates or this file:  npm run css:build
+ */
+@import "tailwindcss" source(none);
+
+/* Class names are read from the templates and from the Python files that
+   pick styles by status (templatetags, forms). */
+@source "../attendance";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-xs;
+  }
+
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply bg-slate-900 text-white hover:bg-slate-700;
+  }
+  .btn-secondary {
+    @apply border-slate-300 bg-white text-slate-700 hover:bg-slate-100;
+  }
+  .btn-success {
+    @apply bg-emerald-600 text-white hover:bg-emerald-700;
+  }
+  .btn-danger {
+    @apply bg-rose-600 text-white hover:bg-rose-700;
+  }
+  .btn-sm {
+    @apply px-2.5 py-1 text-xs;
+  }
+  .link {
+    @apply font-medium text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-900;
+  }
+
+  .input {
+    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-none;
+  }
+  .checkbox {
+    @apply size-4 rounded border-slate-300 accent-slate-900;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+  .help {
+    @apply mt-1 text-xs text-slate-500;
+  }
+  .errorlist {
+    @apply mt-1 text-sm text-rose-700;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap;
+  }
+
+  .data-table {
+    @apply w-full text-left text-sm;
+  }
+  .data-table th {
+    @apply border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold tracking-wide whitespace-nowrap text-slate-500 uppercase;
+  }
+  .data-table td {
+    @apply border-b border-slate-100 px-4 py-2.5 align-middle;
+  }
+  .data-table tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .nav-link {
+    @apply rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+  }
+  .nav-link-active {
+    @apply bg-slate-900 text-white hover:bg-slate-900 hover:text-white;
+  }
+
+  .page-title {
+    @apply text-xl font-semibold tracking-tight text-slate-900;
+  }
+  .section-title {
+    @apply text-sm font-semibold tracking-wide text-slate-500 uppercase;
+  }
+}

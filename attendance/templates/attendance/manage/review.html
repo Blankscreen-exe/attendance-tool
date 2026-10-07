@@ -1,0 +1,84 @@
+{% extends "attendance/base.html" %}
+{% load attendance_tags %}
+{% block title %}Attendance review · Attendance{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <h1 class="page-title">Attendance</h1>
+  {% include "attendance/manage/_attendance_tabs.html" with tab="weekly" %}
+</div>
+
+<form method="get" class="card mt-4 flex flex-wrap items-end gap-3 p-4">
+  <div>
+    <label class="label" for="{{ form.start.id_for_label }}">From</label>
+    {{ form.start }}
+  </div>
+  <div>
+    <label class="label" for="{{ form.end.id_for_label }}">To</label>
+    {{ form.end }}
+  </div>
+  <div class="min-w-48">
+    <label class="label" for="{{ form.employee.id_for_label }}">Employee</label>
+    {{ form.employee }}
+  </div>
+  <button class="btn btn-primary">Show</button>
+  <div class="ml-auto flex flex-wrap gap-2">
+    <a class="btn btn-secondary" href="{% url 'manage_export_weekly' %}?{{ query }}">Weekly CSV</a>
+    <a class="btn btn-secondary" href="{% url 'manage_export_daily' %}?{{ query }}">Daily CSV</a>
+  </div>
+</form>
+{% if form.errors %}<p class="mt-2 text-sm text-rose-700">Enter both dates to change the range.</p>{% endif %}
+
+<p class="mt-4 text-sm text-slate-600">
+  Whole weeks, Monday to Sunday, from {{ start|date:"j M Y" }} to {{ end|date:"j M Y" }}.
+  Each cell is the hours worked against that week's target.
+</p>
+
+<div class="card mt-2 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        {% for week_start in week_starts %}<th>{{ week_start|date:"j M" }}</th>{% endfor %}
+        <th>Total</th>
+        <th>Weeks</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="whitespace-nowrap">
+          <a class="link" href="{% url 'manage_employee_detail' row.employee.pk %}?month={{ start|date:'Y-m' }}">{{ row.employee.display_name }}</a>
+          <div class="text-xs text-slate-500">{{ row.employee.terms.name|default:"No schedule" }}</div>
+        </td>
+        {% for week in row.weeks %}
+        <td class="whitespace-nowrap tabular-nums {{ week.state|cell_style }}">
+          {% if week.state == "before" or week.state == "future" %}
+          —
+          {% else %}
+          <div class="font-medium">{{ week.worked|duration }}</div>
+          {% if week.target is not None %}<div class="text-xs opacity-75">of {{ week.target|duration }}</div>{% endif %}
+          {% endif %}
+        </td>
+        {% endfor %}
+        <td class="whitespace-nowrap tabular-nums">
+          <div class="font-medium text-slate-900">{{ row.worked|duration }}</div>
+          {% if row.target is not None %}<div class="text-xs text-slate-500">of {{ row.target|duration }}</div>{% endif %}
+        </td>
+        <td class="whitespace-nowrap">
+          {% if row.met %}<span class="badge {{ 'met'|badge_style }}">{{ row.met }} completed</span>{% endif %}
+          {% if row.short %}<span class="badge {{ 'short'|badge_style }}">{{ row.short }} short</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="py-6 text-center text-slate-500">No active employees yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-emerald-500"></span>Target completed</li>
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-rose-500"></span>Short</li>
+  <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-sky-500"></span>Week in progress</li>
+</ul>
+{% endblock %}

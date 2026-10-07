@@ -1,0 +1,38 @@
+{% load attendance_tags %}
+<h2 class="section-title mt-8">{{ heading }}</h2>
+{% if items %}
+<div class="card mt-2 overflow-x-auto">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Request</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{% include "attendance/_request_what.html" %}</td>
+        <td class="text-slate-600">{{ item.reason }}</td>
+        <td>
+          <span class="badge {{ item.status|badge_style }}">{{ item.get_status_display }}</span>
+          {% if item.decision_note %}<p class="mt-1 text-xs text-slate-500">Admin: {{ item.decision_note }}</p>{% endif %}
+        </td>
+        <td class="text-right">
+          {% if item.is_pending %}
+          <form method="post" action="{% url 'request_cancel' item.kind item.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-secondary btn-sm">Cancel</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="card mt-2 px-4 py-6 text-center text-sm text-slate-500">No requests yet.</p>
+{% endif %}
