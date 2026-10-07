@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Blankscreen-exe/attendance-tool/actions/workflows/tests.yml"><img alt="Tests" src="https://github.com/Blankscreen-exe/attendance-tool/actions/workflows/tests.yml/badge.svg"></a>
   <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white">
   <img alt="Django 5.2" src="https://img.shields.io/badge/Django-5.2-092E20?logo=django&logoColor=white">
   <img alt="Tailwind CSS 4" src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white">
@@ -114,7 +115,8 @@ manual, with the reason attached.
 
 **Tested on both databases.** The test suite covers the attendance rules,
 schedule history, requests, corrections, leave, email, the lockout,
-permissions and every page, and passes on SQLite and PostgreSQL. One test
+permissions and every page. GitHub Actions runs it on SQLite and PostgreSQL
+on every push, and checks that the Docker image builds and starts. One test
 migrates old data forward to prove the schedule history migration keeps it.
 
 ## Tech stack
@@ -263,8 +265,9 @@ attendance/
   static/            compiled stylesheet, icons, chart tooltips
   tests.py           the test suite
 config/              settings and URLs
-assets/              Tailwind source and the icon generator
-docs/screenshots/    the images in this file
+assets/              Tailwind sources and the icon generator
+docs/                the landing page served by GitHub Pages, and the screenshots
+.github/workflows/   the tests that run on every push
 ```
 
 ## Development
@@ -285,6 +288,9 @@ committed, so the server needs no Node. After editing templates or styles:
 npm install        # once
 npm run css:build  # or css:watch while working
 ```
+
+The landing page in `docs/` is a single static file. Its stylesheet,
+`docs/site.css`, is compiled from `assets/site.css` with `npm run site:build`.
 
 The app icons are drawn by `assets/make_icons.py` (needs Pillow, which the app
 itself does not use). Run it only if you want to change the icon.

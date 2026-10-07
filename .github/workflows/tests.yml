@@ -1,0 +1,79 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SECRET_KEY: only-for-the-test-run
+
+jobs:
+  sqlite:
+    name: Tests on SQLite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Migrations are up to date
+        run: python manage.py makemigrations --check --dry-run
+      - name: Run the tests
+        run: python manage.py test
+
+  postgres:
+    name: Tests on PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: attendance
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/attendance
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run the tests
+        run: python manage.py test
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build --tag attendance-tool .
+      - name: The image starts and answers
+        run: |
+          docker run --detach --name attendance --publish 8000:8000 \
+            --env SECRET_KEY=only-for-the-test-run --env ALLOWED_HOSTS=localhost \
+            attendance-tool
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail --output /dev/null http://localhost:8000/account/login/; then
+              echo "The app answered after $attempt attempt(s)."
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs attendance
+          exit 1
