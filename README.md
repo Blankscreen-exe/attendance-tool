@@ -77,8 +77,12 @@ Every person and number in these is fictional demo data.
 | **Requests**<br>Missing time and leave, with the leave balance beside each request.<br><br><img src="docs/screenshots/requests.png" alt="The admin's request inbox with approve and reject buttons"> | **Schedules**<br>Who is expected when, and how each schedule has changed over time.<br><br><img src="docs/screenshots/schedules.png" alt="A table of employees and the hours expected on each day of the week"> |
 | **Monthly summary**<br>Days and hours per employee, ready to print or export.<br><br><img src="docs/screenshots/attendance-monthly.png" alt="A monthly summary table of days present, absent and hours worked"> | **Leave**<br>Yearly allowances and what each person has used.<br><br><img src="docs/screenshots/leave.png" alt="Leave allowances and each employee's balance"> |
 
+On a phone the menu tucks away behind a button:
+
 <p align="center">
-  <img src="docs/screenshots/clock-phone.png" alt="The clock page on a phone" width="300">
+  <img src="docs/screenshots/clock-phone.png" alt="The clock page on a phone" width="280">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/menu-phone.png" alt="The menu opened on a phone" width="280">
 </p>
 
 ## How it works

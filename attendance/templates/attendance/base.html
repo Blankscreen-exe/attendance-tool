@@ -13,51 +13,111 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Attendance">
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen lg:overflow-visible">
   {% if user.is_authenticated %}
-  <header class="border-b border-slate-200 bg-white print:hidden">
-    <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-      <a href="{% url 'home' %}" class="mr-2 text-base font-semibold tracking-tight text-slate-900">Attendance</a>
-      <nav class="flex flex-wrap items-center gap-1" aria-label="Main">
-        {% if user.is_staff %}
-        <a class="nav-link {% active 'manage_dashboard' %}" href="{% url 'manage_dashboard' %}">Today</a>
-        <a class="nav-link {% active 'manage_review' 'manage_monthly' %}" href="{% url 'manage_review' %}">Attendance</a>
-        <a class="nav-link {% active 'manage_request' %}" href="{% url 'manage_requests' %}">
-          Requests
-          {% if pending_request_count %}<span class="badge ml-1 bg-amber-100 text-amber-800">{{ pending_request_count }}</span>{% endif %}
-        </a>
-        <a class="nav-link {% active 'manage_employee' %}" href="{% url 'manage_employees' %}">Employees</a>
-        <a class="nav-link {% active 'manage_schedule' %}" href="{% url 'manage_schedules' %}">Schedules</a>
-        <a class="nav-link {% active 'manage_holiday' %}" href="{% url 'manage_holidays' %}">Holidays</a>
-        <a class="nav-link {% active 'manage_leave' %}" href="{% url 'manage_leave' %}">Leave</a>
-        <a class="nav-link {% active 'manage_email' %}" href="{% url 'manage_email' %}">Email</a>
-        {% else %}
-        <a class="nav-link {% active 'home' %}" href="{% url 'home' %}">Clock</a>
-        <a class="nav-link {% active 'calendar' %}" href="{% url 'calendar' %}">Calendar</a>
-        <a class="nav-link {% active 'my_requests' 'missing_time_new' 'leave_new' %}" href="{% url 'my_requests' %}">Requests</a>
-        {% endif %}
-      </nav>
-      <div class="ml-auto flex items-center gap-3 text-sm text-slate-600">
-        <a href="{% url 'password_change' %}" class="hover:text-slate-900" title="Change password">{{ user.display_name }}</a>
-        <form method="post" action="{% url 'logout' %}">
-          {% csrf_token %}
-          <button class="btn btn-secondary btn-sm">Sign out</button>
-        </form>
-      </div>
+  {# On narrow screens the menu is tucked away; this bar opens it. #}
+  <div class="sticky top-0 z-20 flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2.5 lg:hidden print:hidden">
+    <button type="button" id="menu-open" aria-controls="sidebar" aria-expanded="false" aria-label="Open menu"
+            class="cursor-pointer rounded-md p-2 text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-slate-900">
+      {% icon "menu" %}
+    </button>
+    <a href="{% url 'home' %}" class="text-base font-semibold tracking-tight text-slate-900">Attendance</a>
+    {% if pending_request_count %}
+    <a href="{% url 'manage_requests' %}" class="badge ml-auto bg-amber-100 text-amber-800">{{ pending_request_count }} waiting</a>
+    {% endif %}
+  </div>
+
+  <div id="menu-backdrop" hidden class="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"></div>
+
+  <aside id="sidebar" aria-label="Menu"
+         class="invisible fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white transition-[transform,visibility] duration-200 lg:visible lg:translate-x-0 print:hidden">
+    <div class="flex items-center justify-between px-4 py-4">
+      <a href="{% url 'home' %}" class="flex items-center gap-2.5 text-base font-semibold tracking-tight text-slate-900">
+        <svg viewBox="0 0 32 32" class="size-7" aria-hidden="true">
+          <rect width="32" height="32" rx="7" fill="#0f172a"/>
+          <circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-width="2.6"/>
+          <path d="M16 10.5V16h4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="16" cy="16" r="1.9" fill="#10b981"/>
+        </svg>
+        Attendance
+      </a>
+      <button type="button" id="menu-close" aria-label="Close menu"
+              class="cursor-pointer rounded-md p-1.5 text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-slate-900 lg:hidden">
+        {% icon "close" %}
+      </button>
     </div>
-  </header>
+
+    <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-2" aria-label="Pages">
+      {% if user.is_staff %}
+      <a class="side-link {% active 'manage_dashboard' %}" href="{% url 'manage_dashboard' %}">{% icon "pulse" %}Today</a>
+      <a class="side-link {% active 'manage_review' 'manage_monthly' %}" href="{% url 'manage_review' %}">{% icon "bars" %}Attendance</a>
+      <a class="side-link {% active 'manage_request' %}" href="{% url 'manage_requests' %}">
+        {% icon "inbox" %}Requests
+        {% if pending_request_count %}<span class="badge ml-auto bg-amber-100 text-amber-800">{{ pending_request_count }}</span>{% endif %}
+      </a>
+      <a class="side-link {% active 'manage_employee' 'manage_entry' %}" href="{% url 'manage_employees' %}">{% icon "people" %}Employees</a>
+      <a class="side-link {% active 'manage_schedule' %}" href="{% url 'manage_schedules' %}">{% icon "grid" %}Schedules</a>
+      <a class="side-link {% active 'manage_holiday' %}" href="{% url 'manage_holidays' %}">{% icon "star" %}Holidays</a>
+      <a class="side-link {% active 'manage_leave' %}" href="{% url 'manage_leave' %}">{% icon "briefcase" %}Leave</a>
+      <a class="side-link {% active 'manage_email' %}" href="{% url 'manage_email' %}">{% icon "mail" %}Email</a>
+      {% else %}
+      <a class="side-link {% active 'home' %}" href="{% url 'home' %}">{% icon "clock" %}Clock</a>
+      <a class="side-link {% active 'calendar' %}" href="{% url 'calendar' %}">{% icon "calendar" %}Calendar</a>
+      <a class="side-link {% active 'my_requests' 'missing_time_new' 'leave_new' %}" href="{% url 'my_requests' %}">{% icon "inbox" %}Requests</a>
+      {% endif %}
+    </nav>
+
+    <div class="border-t border-slate-200 p-3">
+      <div class="px-3 pb-2">
+        <p class="truncate text-sm font-semibold text-slate-900">{{ user.display_name }}</p>
+        <p class="truncate text-xs text-slate-500">{% if user.is_staff %}Admin{% else %}{{ user.username }}{% endif %}</p>
+      </div>
+      <a class="side-link {% active 'password_change' %}" href="{% url 'password_change' %}">{% icon "key" %}Change password</a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="side-link">{% icon "leave" %}Sign out</button>
+      </form>
+    </div>
+  </aside>
   {% endif %}
 
-  <main class="mx-auto max-w-6xl px-4 py-6">
-    {% for message in messages %}
-    <div class="mb-4 rounded-lg border px-4 py-3 text-sm {{ message.tags|message_style }}" role="status">{{ message }}</div>
-    {% endfor %}
-    {% block content %}{% endblock %}
-  </main>
+  <div class="{% if user.is_authenticated %}lg:pl-64 print:pl-0{% endif %}">
+    <main class="mx-auto max-w-6xl px-4 py-6 lg:px-8">
+      {% for message in messages %}
+      <div class="mb-4 rounded-lg border px-4 py-3 text-sm {{ message.tags|message_style }}" role="status">{{ message }}</div>
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("{% url 'service_worker' %}").catch(function () {});
     }
+
+    // The slide-in menu on narrow screens. On wide screens the sidebar is always shown.
+    (function () {
+      var sidebar = document.getElementById("sidebar");
+      if (!sidebar) return;
+      var opener = document.getElementById("menu-open");
+      var backdrop = document.getElementById("menu-backdrop");
+
+      function show(open) {
+        sidebar.classList.toggle("-translate-x-full", !open);
+        sidebar.classList.toggle("invisible", !open);
+        backdrop.hidden = !open;
+        opener.setAttribute("aria-expanded", open ? "true" : "false");
+        document.body.classList.toggle("overflow-hidden", open);
+        if (open) document.getElementById("menu-close").focus();
+      }
+
+      opener.addEventListener("click", function () { show(true); });
+      backdrop.addEventListener("click", function () { show(false); });
+      document.getElementById("menu-close").addEventListener("click", function () { show(false); opener.focus(); });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && opener.getAttribute("aria-expanded") === "true") { show(false); opener.focus(); }
+      });
+    })();
   </script>
 </body>
 </html>

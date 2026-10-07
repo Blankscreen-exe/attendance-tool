@@ -1426,6 +1426,24 @@ class ViewTests(AttendanceTestCase):
         detail = self.client.get(reverse("manage_employee_detail", args=[self.employee.pk]))
         self.assertContains(detail, "Timeline for October 2026")
 
+    def test_menu_is_a_sidebar_for_employees_and_admins(self):
+        self.sign_in(self.employee)
+        page = self.client.get(reverse("calendar"))
+        for text in ('id="sidebar"', 'id="menu-open"', "Change password", "Sign out"):
+            with self.subTest(text):
+                self.assertContains(page, text)
+        self.assertContains(page, 'class="side-link side-link-active" href="/calendar/"')
+        self.assertContains(page, "side-link-active", count=1)  # only the current page is marked
+        self.assertNotContains(page, reverse("manage_dashboard"))
+
+        self.sign_in(self.admin)
+        page = self.client.get(reverse("manage_entry_new", args=[self.employee.pk]))
+        self.assertContains(page, 'class="side-link side-link-active" href="/manage/employees/"')
+        self.assertNotContains(page, reverse("calendar"))
+
+        self.client.logout()
+        self.assertNotContains(self.client.get(reverse("login")), 'id="sidebar"')
+
     MAIL_SERVER = {
         "EMAIL_HOST": "smtp.example.com",
         "EMAIL_HOST_USER": "apikey",
