@@ -1,10 +1,12 @@
 {
   "name": "attendance-tool",
   "private": true,
-  "description": "Build tooling for the compiled Tailwind stylesheet. Not needed on the server.",
+  "description": "Build tooling for the compiled Tailwind stylesheets. Not needed on the server.",
   "scripts": {
     "css:build": "tailwindcss -i assets/tailwind.css -o attendance/static/attendance/app.css --minify",
-    "css:watch": "tailwindcss -i assets/tailwind.css -o attendance/static/attendance/app.css --watch"
+    "css:watch": "tailwindcss -i assets/tailwind.css -o attendance/static/attendance/app.css --watch",
+    "site:build": "tailwindcss -i assets/site.css -o docs/site.css --minify",
+    "site:watch": "tailwindcss -i assets/site.css -o docs/site.css --watch"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",

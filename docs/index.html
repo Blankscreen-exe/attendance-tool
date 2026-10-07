@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendance: a self-hosted attendance tool for small teams</title>
+  <meta name="description" content="Employees press one button, the server records the time, and the admin gets a clear record of who worked when. Open source, self-hosted, built with Django.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Attendance: a self-hosted attendance tool for small teams">
+  <meta property="og:description" content="Employees press one button, the server records the time, and the admin gets a clear record of who worked when.">
+  <meta property="og:url" content="https://blankscreen-exe.github.io/attendance-tool/">
+  <meta property="og:image" content="https://blankscreen-exe.github.io/attendance-tool/screenshots/today.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+  <header class="border-b border-slate-200">
+    <div class="container-page flex items-center gap-6 py-4">
+      <a href="#top" class="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-slate-900">
+        <svg viewBox="0 0 32 32" class="size-7" aria-hidden="true">
+          <rect width="32" height="32" rx="7" fill="#0f172a"/>
+          <circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-width="2.6"/>
+          <path d="M16 10.5V16h4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="16" cy="16" r="1.9" fill="#10b981"/>
+        </svg>
+        Attendance
+      </a>
+      <nav class="ml-auto hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex" aria-label="Sections">
+        <a class="hover:text-slate-900" href="#employees">For employees</a>
+        <a class="hover:text-slate-900" href="#admin">For the admin</a>
+        <a class="hover:text-slate-900" href="#design">How it is built</a>
+        <a class="hover:text-slate-900" href="#run">Run it</a>
+      </nav>
+      <a class="btn btn-dark ml-auto md:ml-0" href="https://github.com/Blankscreen-exe/attendance-tool">
+        <svg viewBox="0 0 16 16" class="size-4" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- Hero -->
+    <section class="overflow-hidden bg-slate-50">
+      <div class="container-page grid items-center gap-12 py-16 lg:grid-cols-[5fr_6fr] lg:py-24">
+        <div>
+          <p class="eyebrow">Open source · Self-hosted</p>
+          <h1 class="mt-3 text-4xl font-semibold tracking-tight text-balance text-slate-900 sm:text-5xl lg:text-6xl">Attendance, without the HR suite.</h1>
+          <p class="lead">
+            Employees press one button. The server records the time. You get a clear record of who
+            worked when, and whether the agreed hours were done.
+          </p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a class="btn btn-dark" href="https://github.com/Blankscreen-exe/attendance-tool">View the code on GitHub</a>
+            <a class="btn btn-light" href="#run">Run it yourself</a>
+          </div>
+          <p class="mt-5 text-sm text-slate-500">MIT licensed. One container, on SQLite or PostgreSQL.</p>
+        </div>
+
+        <div class="relative">
+          <figure class="window sm:ml-20">
+            <div class="window-bar"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div>
+            <img src="screenshots/today.png" width="2560" height="1841" alt="The admin's Today page: who is clocked in, hours so far this week, and a timeline bar for each employee">
+          </figure>
+          <img src="screenshots/clock-phone.png" width="780" height="2033" alt="The clock page on a phone, with one large Clock out button"
+               class="absolute -bottom-10 left-0 hidden w-36 rounded-2xl border-4 border-slate-900 shadow-2xl sm:block lg:w-40">
+        </div>
+      </div>
+    </section>
+
+    <!-- Three ideas -->
+    <section class="container-page py-16 lg:py-20">
+      <div class="grid gap-8 md:grid-cols-3">
+        <div>
+          <div class="icon-tile">
+            <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          </div>
+          <h2 class="mt-4 text-lg font-semibold text-slate-900">One button</h2>
+          <p class="mt-2 leading-relaxed">Clock in, clock out. Nobody types a time, so the record means the same thing for everyone.</p>
+        </div>
+        <div>
+          <div class="icon-tile">
+            <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 19v-9M12 19V5M19 19v-6"/></svg>
+          </div>
+          <h2 class="mt-4 text-lg font-semibold text-slate-900">Hours against a target</h2>
+          <p class="mt-2 leading-relaxed">Each schedule has weekly hours. Every week shows what was worked, what was expected, and the difference.</p>
+        </div>
+        <div>
+          <div class="icon-tile">
+            <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 13l2.5-7h11L20 13v5H4v-5Zm0 0h5a3 3 0 0 0 6 0h5"/></svg>
+          </div>
+          <h2 class="mt-4 text-lg font-semibold text-slate-900">Requests, not edits</h2>
+          <p class="mt-2 leading-relaxed">A missed punch becomes a request with a reason. Nothing changes until the admin approves, and it stays marked as manual.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Employees -->
+    <section id="employees" class="border-t border-slate-200 bg-slate-50">
+      <div class="container-page grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-24">
+        <div>
+          <p class="eyebrow">For employees</p>
+          <h2 class="section-heading">Press the button. See where you stand.</h2>
+          <p class="lead">The first page is the clock. Everything else is there to answer one question: have I done my hours?</p>
+          <ul class="mt-6 space-y-3">
+            <li class="flex gap-3"><span class="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-600"></span><span>Today's hours and the week's progress against the target, updating live.</span></li>
+            <li class="flex gap-3"><span class="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-600"></span><span>A month calendar: present, absent, leave, holiday, day off or a missing clock-out.</span></li>
+            <li class="flex gap-3"><span class="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-600"></span><span>A timeline of each day, with breaks shown between sessions.</span></li>
+            <li class="flex gap-3"><span class="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-600"></span><span>Requests for missing time and for leave, with the leave balance left for the year.</span></li>
+            <li class="flex gap-3"><span class="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-600"></span><span>Add it to a phone's home screen and it opens like an app.</span></li>
+          </ul>
+        </div>
+        <a class="window block" href="screenshots/calendar.png">
+          <div class="window-bar"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div>
+          <img src="screenshots/calendar.png" width="2560" height="2610" loading="lazy" alt="An employee's month calendar with each week's hours against its target, and a timeline of each day below">
+        </a>
+      </div>
+    </section>
+
+    <!-- Admin -->
+    <section id="admin" class="border-t border-slate-200">
+      <div class="container-page py-16 lg:py-24">
+        <div class="max-w-2xl">
+          <p class="eyebrow">For the admin</p>
+          <h2 class="section-heading">The whole team's record, without the paperwork.</h2>
+          <p class="lead">Review any week or month, decide requests, and set the rules: schedules, holidays and leave. Admins are owners, so they never clock in themselves.</p>
+        </div>
+
+        <div class="mt-12 grid gap-x-8 gap-y-12 md:grid-cols-2">
+          <figure>
+            <a class="window block" href="screenshots/attendance-weekly.png">
+              <div class="window-bar"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div>
+              <img src="screenshots/attendance-weekly.png" width="2560" height="1431" loading="lazy" class="aspect-[16/10] w-full bg-slate-50 object-contain object-top" alt="A grid of employees and weeks showing hours worked against each week's target">
+            </a>
+            <figcaption class="mt-4">
+              <h3 class="font-semibold text-slate-900">Attendance by week</h3>
+              <p class="mt-1 leading-relaxed">Hours against target for any range. Green met it, red fell short, blue is still running. Exports to CSV.</p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a class="window block" href="screenshots/requests.png">
+              <div class="window-bar"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div>
+              <img src="screenshots/requests.png" width="2560" height="1880" loading="lazy" class="aspect-[16/10] w-full object-cover object-top" alt="The request inbox with approve and reject buttons, and a flag on a leave request that exceeds the allowance">
+            </a>
+            <figcaption class="mt-4">
+              <h3 class="font-semibold text-slate-900">Requests</h3>
+              <p class="mt-1 leading-relaxed">Missing time and leave in one inbox. Leave that would go over the yearly allowance is flagged, not blocked.</p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a class="window block" href="screenshots/schedules.png">
+              <div class="window-bar"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div>
+              <img src="screenshots/schedules.png" width="2560" height="1785" loading="lazy" class="aspect-[16/10] w-full object-cover object-top" alt="A table of the hours each employee is expected to work on each day of the week">
+            </a>
+            <figcaption class="mt-4">
+              <h3 class="font-semibold text-slate-900">Schedules</h3>
+              <p class="mt-1 leading-relaxed">Who is expected when, including days off, holidays and leave. Changes apply from a chosen week onward.</p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a class="window block" href="screenshots/attendance-monthly.png">
+              <div class="window-bar"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div>
+              <img src="screenshots/attendance-monthly.png" width="2560" height="1258" loading="lazy" class="aspect-[16/10] w-full bg-slate-50 object-contain object-top" alt="A monthly summary of days present, absent and on leave, with hours worked against target">
+            </a>
+            <figcaption class="mt-4">
+              <h3 class="font-semibold text-slate-900">Monthly summary</h3>
+              <p class="mt-1 leading-relaxed">Days and hours per employee, ready to print or export for payroll.</p>
+            </figcaption>
+          </figure>
+        </div>
+
+        <!-- Everything else, as a list -->
+        <div class="mt-16 grid gap-x-8 gap-y-6 rounded-2xl bg-slate-50 p-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <h3 class="font-semibold text-slate-900">Corrections with a trail</h3>
+            <p class="mt-1 text-sm leading-relaxed">Add, correct or remove an entry with a reason. The old values stay in a history the employee can see.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-900">Holidays</h3>
+            <p class="mt-1 text-sm leading-relaxed">An editable list that starts with Pakistan's public holidays. Eid dates are estimated and marked tentative until confirmed.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-900">Leave allowance</h3>
+            <p class="mt-1 text-sm leading-relaxed">Days per leave type per year, and everyone's balance at a glance.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-900">Email notices</h3>
+            <p class="mt-1 text-sm leading-relaxed">Over your own SMTP server, with a test button that explains what went wrong when sending fails.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-900">Sign-in lockout</h3>
+            <p class="mt-1 text-sm leading-relaxed">Five wrong passwords lock a username for fifteen minutes.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-900">Your server, your data</h3>
+            <p class="mt-1 text-sm leading-relaxed">Nothing leaves the machine you run it on. Back it up by copying one file.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Design decisions -->
+    <section id="design" class="border-t border-slate-200 bg-slate-900 text-slate-300">
+      <div class="container-page py-16 lg:py-24">
+        <div class="max-w-2xl">
+          <p class="text-sm font-semibold tracking-wide text-emerald-400 uppercase">How it is built</p>
+          <h2 class="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">A few decisions shape the whole thing.</h2>
+        </div>
+        <div class="mt-12 grid gap-x-10 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <h3 class="font-semibold text-white">The server owns the clock</h3>
+            <p class="mt-2 text-sm leading-relaxed">The button sends only "in" or "out". The time is taken on the server, so a wrong or altered device clock changes nothing, and a double tap cannot clock someone in and straight back out.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-white">One calculation, many views</h3>
+            <p class="mt-2 text-sm leading-relaxed">Every calendar cell, weekly total, monthly summary and export comes from the same function. Nothing derived is stored, so the views cannot disagree.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-white">The past is not rewritten</h3>
+            <p class="mt-2 text-sm leading-relaxed">Schedules are kept as dated versions. Raising a target from next week leaves earlier weeks judged by what applied at the time.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-white">The database says no</h3>
+            <p class="mt-2 text-sm leading-relaxed">A partial unique index allows one open entry per employee, and check constraints keep a clock-out after its clock-in.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-white">Nothing to babysit</h3>
+            <p class="mt-2 text-sm leading-relaxed">A forgotten clock-out is flagged the next time anyone opens the app. No scheduler has to be running for the record to be right.</p>
+          </div>
+          <div>
+            <h3 class="font-semibold text-white">Tested on both databases</h3>
+            <p class="mt-2 text-sm leading-relaxed">The test suite runs on SQLite and PostgreSQL on every push, and the Docker image is built and started as part of the same check.</p>
+          </div>
+        </div>
+        <ul class="mt-12 flex flex-wrap gap-2 text-sm">
+          <li class="rounded-full border border-slate-700 px-3 py-1">Django 5.2</li>
+          <li class="rounded-full border border-slate-700 px-3 py-1">Python 3.10+</li>
+          <li class="rounded-full border border-slate-700 px-3 py-1">Tailwind CSS 4, compiled</li>
+          <li class="rounded-full border border-slate-700 px-3 py-1">SQLite or PostgreSQL</li>
+          <li class="rounded-full border border-slate-700 px-3 py-1">Docker</li>
+          <li class="rounded-full border border-slate-700 px-3 py-1">Under 100 lines of JavaScript</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Run it -->
+    <section id="run" class="border-t border-slate-200">
+      <div class="container-page grid gap-12 py-16 lg:grid-cols-2 lg:py-24">
+        <div>
+          <p class="eyebrow">Run it</p>
+          <h2 class="section-heading">Up in two commands.</h2>
+          <p class="lead">Copy the example settings, fill in a secret key and an admin password, and start the container. The first start creates the database and your admin account.</p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a class="btn btn-dark" href="https://github.com/Blankscreen-exe/attendance-tool#getting-started">Full setup guide</a>
+            <a class="btn btn-light" href="https://github.com/Blankscreen-exe/attendance-tool#configuration">All settings</a>
+          </div>
+        </div>
+        <div class="space-y-5">
+          <div>
+            <p class="mb-2 text-sm font-semibold text-slate-900">With Docker</p>
+            <pre class="overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm leading-relaxed text-slate-100"><code>git clone https://github.com/Blankscreen-exe/attendance-tool.git
+cd attendance-tool
+cp .env.example .env    <span class="text-slate-400"># then edit it</span>
+docker compose up -d --build</code></pre>
+          </div>
+          <div>
+            <p class="mb-2 text-sm font-semibold text-slate-900">Or straight from Python</p>
+            <pre class="overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm leading-relaxed text-slate-100"><code>pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-200 bg-slate-50">
+    <div class="container-page flex flex-wrap items-center justify-between gap-4 py-8 text-sm text-slate-500">
+      <p>Released under the <a class="font-medium text-slate-700 underline underline-offset-2 hover:text-slate-900" href="https://github.com/Blankscreen-exe/attendance-tool/blob/main/LICENSE">MIT Licence</a>. Every person and number in the screenshots is fictional demo data.</p>
+      <a class="font-medium text-slate-700 underline underline-offset-2 hover:text-slate-900" href="https://github.com/Blankscreen-exe/attendance-tool">github.com/Blankscreen-exe/attendance-tool</a>
+    </div>
+  </footer>
+
+</body>
+</html>
