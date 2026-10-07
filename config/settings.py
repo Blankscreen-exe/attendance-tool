@@ -95,6 +95,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "attendance.context_processors.pending_requests",
+                "attendance.context_processors.navigation",
             ],
         },
     },

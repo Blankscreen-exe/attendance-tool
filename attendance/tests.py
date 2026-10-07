@@ -1444,6 +1444,73 @@ class ViewTests(AttendanceTestCase):
         self.client.logout()
         self.assertNotContains(self.client.get(reverse("login")), 'id="sidebar"')
 
+    def trail(self, url):
+        """The breadcrumb trail of a page as (label, link or None) pairs, home icon left out."""
+        context = self.client.get(url).context
+        section = context["section"]
+        steps = context.get("breadcrumbs") or []
+        first = (section.label, reverse(section.url_name) if steps else None)
+        return [first, *[(step["label"], None if step is steps[-1] else step["url"]) for step in steps]]
+
+    def test_breadcrumbs_for_employees(self):
+        self.sign_in(self.employee)
+        self.assertEqual(self.trail(reverse("home")), [("Clock", None)])
+        self.assertEqual(self.trail(reverse("calendar")), [("Calendar", None)])
+        self.assertEqual(self.trail(reverse("my_requests")), [("Requests", None)])
+        self.assertEqual(self.trail(reverse("leave_new")), [("Requests", "/requests/"), ("Request leave", None)])
+        self.assertEqual(
+            self.trail(reverse("missing_time_new")), [("Requests", "/requests/"), ("Log missing time", None)]
+        )
+        self.assertEqual(self.trail(reverse("password_change")), [("Change password", None)])
+
+        page = self.client.get(reverse("leave_new"))
+        self.assertContains(page, 'aria-label="Breadcrumb"')
+        self.assertContains(page, '<a class="hover:text-slate-900 hover:underline" href="/requests/">Requests</a>')
+        self.assertContains(page, '<span class="font-medium text-slate-900" aria-current="page">Request leave</span>')
+
+    def test_breadcrumbs_for_admins(self):
+        entry = self.work(5)
+        holiday = Holiday.objects.create(date=date(2026, 10, 9), name="Founders Day")
+        self.sign_in(self.admin)
+        person = ("sara", reverse("manage_employee_detail", args=[self.employee.pk]))
+        employees = ("Employees", "/manage/employees/")
+        expected = {
+            reverse("manage_dashboard"): [("Today", None)],
+            reverse("manage_review"): [("Attendance", None)],
+            reverse("manage_monthly"): [("Attendance", "/manage/attendance/"), ("By month", None)],
+            reverse("manage_requests"): [("Requests", None)],
+            reverse("manage_employees"): [("Employees", None)],
+            reverse("manage_employee_new"): [employees, ("Add employee", None)],
+            person[1]: [employees, ("sara", None)],
+            reverse("manage_employee_edit", args=[self.employee.pk]): [employees, person, ("Edit", None)],
+            reverse("manage_employee_password", args=[self.employee.pk]): [employees, person, ("Set password", None)],
+            reverse("manage_entry_new", args=[self.employee.pk]): [employees, person, ("Add time", None)],
+            reverse("manage_entry_edit", args=[entry.pk]): [employees, person, ("Correct an entry", None)],
+            reverse("manage_entry_remove", args=[entry.pk]): [employees, person, ("Remove an entry", None)],
+            reverse("manage_schedules"): [("Schedules", None)],
+            reverse("manage_schedule_new"): [("Schedules", "/manage/schedules/"), ("Add schedule", None)],
+            reverse("manage_schedule_edit", args=[self.schedule.pk]): [("Schedules", "/manage/schedules/"), ("BD", None)],
+            reverse("manage_holidays"): [("Holidays", None)],
+            reverse("manage_holiday_new"): [("Holidays", "/manage/holidays/"), ("Add holiday", None)],
+            reverse("manage_holiday_edit", args=[holiday.pk]): [("Holidays", "/manage/holidays/"), ("Founders Day", None)],
+            reverse("manage_leave"): [("Leave", None)],
+            reverse("manage_email"): [("Email", None)],
+        }
+        for url, trail in expected.items():
+            with self.subTest(url):
+                self.assertEqual(self.trail(url), trail)
+
+        # An admin has no attendance page, so their name in a trail is not a link.
+        own = self.trail(reverse("manage_employee_edit", args=[self.admin.pk]))
+        self.assertEqual(own, [employees, ("boss", None), ("Edit", None)])
+
+    def test_pages_outside_the_menu_have_no_breadcrumbs(self):
+        self.assertNotContains(self.client.get(reverse("login")), 'aria-label="Breadcrumb"')
+        self.sign_in(self.employee)
+        refused = self.client.get(reverse("manage_dashboard"))
+        self.assertEqual(refused.status_code, 403)
+        self.assertNotContains(refused, 'aria-label="Breadcrumb"', status_code=403)
+
     MAIL_SERVER = {
         "EMAIL_HOST": "smtp.example.com",
         "EMAIL_HOST_USER": "apikey",

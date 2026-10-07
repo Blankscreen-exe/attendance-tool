@@ -16,6 +16,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from . import notifications, services
+from .navigation import crumb
 from .forms import LeaveForm, LoginForm, MissingTimeForm, OwnPasswordForm
 from .models import WEEKDAY_SHORT, LeaveRequest, MissingTimeRequest, RequestStatus, TimeEntry
 
@@ -218,6 +219,7 @@ def missing_time_new(request):
             "intro": intro,
             "submit_label": "Send request",
             "cancel_url": reverse("my_requests"),
+            "breadcrumbs": [crumb(title)],
         },
     )
 
@@ -258,6 +260,7 @@ def leave_new(request):
             "intro": intro,
             "submit_label": "Send request",
             "cancel_url": reverse("my_requests"),
+            "breadcrumbs": [crumb("Request leave")],
         },
     )
 

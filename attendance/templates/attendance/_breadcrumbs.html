@@ -1,0 +1,30 @@
+{% load attendance_tags %}
+{# Home, then the section, then whatever the view listed in `breadcrumbs`. The last step is the current page. #}
+<nav aria-label="Breadcrumb" class="mb-4 print:hidden">
+  <ol class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-slate-500">
+    <li>
+      <a href="{% url 'home' %}" aria-label="Home"
+         class="-m-1 block rounded p-1 hover:bg-slate-200 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-slate-900">{% icon "home" "size-4" %}</a>
+    </li>
+    <li class="flex items-center gap-1.5">
+      <span class="text-slate-300">{% icon "chevron" "size-4" %}</span>
+      {% if breadcrumbs %}
+      <a class="hover:text-slate-900 hover:underline" href="{% url section.url_name %}">{{ section.label }}</a>
+      {% else %}
+      <span class="font-medium text-slate-900" aria-current="page">{{ section.label }}</span>
+      {% endif %}
+    </li>
+    {% for step in breadcrumbs %}
+    <li class="flex items-center gap-1.5">
+      <span class="text-slate-300">{% icon "chevron" "size-4" %}</span>
+      {% if forloop.last %}
+      <span class="font-medium text-slate-900" aria-current="page">{{ step.label }}</span>
+      {% elif step.url %}
+      <a class="hover:text-slate-900 hover:underline" href="{{ step.url }}">{{ step.label }}</a>
+      {% else %}
+      <span>{{ step.label }}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</nav>

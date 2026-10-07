@@ -41,6 +41,7 @@ from .models import (
     Schedule,
     TimeEntry,
 )
+from .navigation import crumb
 from .views import get_request_or_404, month_context, parse_month
 
 MAX_REVIEW_DAYS = 371  # 53 weeks
@@ -64,7 +65,8 @@ def tracked_employees():
     return Employee.objects.filter(is_active=True, is_staff=False).prefetch_related(SCHEDULE_HISTORY)
 
 
-def form_page(request, form, title, cancel_url, submit_label="Save", intro="", danger=False):
+def form_page(request, form, title, cancel_url, submit_label="Save", intro="", danger=False, trail=()):
+    """A page that is just one form. `trail` is its breadcrumb steps below the section."""
     return render(
         request,
         "attendance/form_page.html",
@@ -75,8 +77,16 @@ def form_page(request, form, title, cancel_url, submit_label="Save", intro="", d
             "submit_label": submit_label,
             "cancel_url": cancel_url,
             "danger": danger,
+            "breadcrumbs": list(trail),
         },
     )
+
+
+def person_crumb(employee, query=""):
+    """The breadcrumb step for an employee. Admins have no attendance page to link to."""
+    if employee.is_staff:
+        return crumb(employee.display_name)
+    return crumb(employee.display_name, "manage_employee_detail", employee.pk, query=query)
 
 
 # --- Dashboard --------------------------------------------------------------
@@ -306,7 +316,9 @@ def _monthly(request):
 
 @admin_required
 def monthly(request):
-    return render(request, "attendance/manage/monthly.html", _monthly(request))
+    context = _monthly(request)
+    context["breadcrumbs"] = [crumb("By month")]
+    return render(request, "attendance/manage/monthly.html", context)
 
 
 @admin_required
@@ -427,7 +439,9 @@ def employee_new(request):
         employee = form.save()
         messages.success(request, f"{employee.display_name} can now sign in as {employee.username}.")
         return redirect("manage_employees")
-    return form_page(request, form, "Add employee", reverse("manage_employees"), "Add employee")
+    return form_page(
+        request, form, "Add employee", reverse("manage_employees"), "Add employee", trail=[crumb("Add employee")]
+    )
 
 
 @admin_required
@@ -438,7 +452,13 @@ def employee_edit(request, pk):
         form.save()
         messages.success(request, "Employee saved.")
         return redirect("manage_employees")
-    return form_page(request, form, f"Edit {employee.display_name}", reverse("manage_employees"))
+    return form_page(
+        request,
+        form,
+        f"Edit {employee.display_name}",
+        reverse("manage_employees"),
+        trail=[person_crumb(employee), crumb("Edit")],
+    )
 
 
 @admin_required
@@ -458,6 +478,7 @@ def employee_password(request, pk):
         f"Set a new password for {employee.display_name}",
         reverse("manage_employees"),
         "Set password",
+        trail=[person_crumb(employee), crumb("Set password")],
     )
 
 
@@ -471,6 +492,7 @@ def employee_detail(request, pk):
         calendar_url=reverse("manage_employee_detail", args=[employee.pk]),
         leave_balances=services.leave_balances(employee, month.year),
         assignments=employee.assignment_list()[::-1],
+        breadcrumbs=[crumb(employee.display_name)],
     )
     return render(request, "attendance/manage/employee_detail.html", context)
 
@@ -527,6 +549,7 @@ def entry_new(request, employee_pk):
         reverse("manage_employee_detail", args=[employee.pk]),
         "Add time",
         intro="For time that was worked but not recorded. It is marked as an admin correction, with your reason.",
+        trail=[person_crumb(employee), crumb("Add time")],
     )
 
 
@@ -547,6 +570,7 @@ def entry_edit(request, pk):
         _month_of(employee, entry.clock_in),
         "Save correction",
         intro="The entry is marked as an admin correction, and the old times are kept in the correction history.",
+        trail=[person_crumb(employee), crumb("Correct an entry")],
     )
 
 
@@ -572,6 +596,7 @@ def entry_remove(request, pk):
         intro=f"{clock_in:%A %d %B %Y}, {clock_in:%I:%M %p} to {clock_out}. "
         "The times stay in the correction history.",
         danger=True,
+        trail=[person_crumb(employee), crumb("Remove an entry")],
     )
 
 
@@ -629,7 +654,14 @@ def schedule_edit(request, pk=None):
         if schedule
         else "Tick the days people on this schedule normally work."
     )
-    return form_page(request, form, title, reverse("manage_schedules"), intro=intro)
+    return form_page(
+        request,
+        form,
+        title,
+        reverse("manage_schedules"),
+        intro=intro,
+        trail=[crumb(schedule.name if schedule else "Add schedule")],
+    )
 
 
 @admin_required
@@ -745,7 +777,9 @@ def holiday_edit(request, pk=None):
         messages.success(request, "Holiday saved.")
         return redirect(f"{reverse('manage_holidays')}?year={saved.date.year}")
     title = f"Edit {holiday.name}" if holiday else "Add holiday"
-    return form_page(request, form, title, reverse("manage_holidays"))
+    return form_page(
+        request, form, title, reverse("manage_holidays"), trail=[crumb(holiday.name if holiday else "Add holiday")]
+    )
 
 
 @admin_required

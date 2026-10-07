@@ -101,18 +101,10 @@ def message_style(tags):
     return MESSAGE_STYLES.get(tags, "border-slate-200 bg-white text-slate-800")
 
 
-@register.simple_tag(takes_context=True)
-def active(context, *prefixes):
-    """Returns the active menu class when the current URL name starts with a prefix."""
-    match = getattr(context.get("request"), "resolver_match", None)
-    name = match.url_name if match else ""
-    if name and any(name == prefix or name.startswith(prefix) for prefix in prefixes):
-        return "side-link-active"
-    return ""
-
-
-# Line icons for the menu, drawn on a 24 by 24 grid.
+# Line icons for the menu and breadcrumbs, drawn on a 24 by 24 grid.
 ICONS = {
+    "home": '<path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-7.5Z"/>',
+    "chevron": '<path d="m9.5 6 6 6-6 6"/>',
     "clock": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     "calendar": '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
     "inbox": '<path d="M4 13l2.5-7h11L20 13v5H4v-5Zm0 0h5a3 3 0 0 0 6 0h5"/>',
@@ -140,8 +132,9 @@ ICONS = {
 
 
 @register.simple_tag
-def icon(name):
+def icon(name, size="size-5"):
+    """An icon as inline SVG. `size` is a Tailwind size class."""
     return mark_safe(
-        '<svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+        f'<svg class="{size} shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
         f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS[name]}</svg>'
     )
